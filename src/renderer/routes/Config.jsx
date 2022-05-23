@@ -31,8 +31,9 @@ const Config = (props) => {
 
         if (filePath) {
             let newConfig = updateConfig(field, filePath);
+            let result = await window.api.send("fileExists", filePath + "/StreamingAssets");
 
-            if (!window.api.send("fileExists", filePath + "/StreamingAssets")) {
+            if (!result) {
                 setError("The directory you set doesn't contain the StreamingAssets folder");
                 return;
             }

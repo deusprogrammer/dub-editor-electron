@@ -18,7 +18,7 @@ import { resolveHtmlPath } from './util';
 
 import defaultConfig from './defaultConfig';
 
-const HOME : string = process.platform === 'darwin' ? process.env.HOME || "/" : `${process.env.HOMEDRIVE}${process.env.HOMEPATH}/AppData/DubEditor`;
+const HOME : string = process.platform === 'darwin' ? process.env.HOME || "/" : `${process.env.HOMEDRIVE}${process.env.HOMEPATH}/AppData/Local/DubEditor`;
 const CONFIG_FILE : string = `${HOME}/.dub-editor-config.json`;
 
 export default class AppUpdater {
