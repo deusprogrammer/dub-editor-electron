@@ -19,8 +19,8 @@ let VideoList = () => {
         setWhatTheDubVideos(whatthedubVideos);
     }
 
-    const deleteFile = async (id, game) => {
-        await window.api.send("deleteVideo", {id, game});
+    const deleteFile = async (id, game, isActive) => {
+        await window.api.send("deleteVideo", {id, game, isActive});
         toast("Deleted video", {type: "info"});
         loadVideos();
     }
@@ -75,7 +75,7 @@ let VideoList = () => {
                                 <td><input type="checkbox" checked={!video.disabled} onChange={() => {toggleFile(video._id, "rifftrax", video.disabled)}} /></td>
                                 <td style={{textAlign: "left"}}>{video.name}</td>
                                 <td><Link to={`/videos/rifftrax/${video._id}`}><button type="button">Open Details</button></Link></td>
-                                {video._id.startsWith("_") ? <td><button type="button" onClick={() => {deleteFile(video._id, "rifftrax")}}>Delete</button></td> : null}
+                                {video._id.startsWith("_") ? <td><button type="button" onClick={() => {deleteFile(video._id, "rifftrax", !video.disabled)}}>Delete</button></td> : null}
                             </tr>
                         )
                     })}
@@ -106,7 +106,7 @@ let VideoList = () => {
                                 <td><input type="checkbox" checked={!video.disabled} onChange={() => {toggleFile(video._id, "whatthedub", video.disabled)}} /></td>
                                 <td style={{textAlign: "left"}}>{video.name}</td>
                                 <td><Link to={`/videos/whatthedub/${video._id}`}><button type="button">Open Details</button></Link></td>
-                                {video._id.startsWith("_") ? <td><button type="button" onClick={() => {deleteFile(video._id, "whatthedub")}}>Delete</button></td> : null}
+                                {video._id.startsWith("_") ? <td><button type="button" onClick={() => {deleteFile(video._id, "whatthedub", !video.disabled)}}>Delete</button></td> : null}
                             </tr>
                         )
                     })}

@@ -1,7 +1,7 @@
 type Config = {
-    whatTheDubDirectory: string | null,
-    rifftraxDirectory: string | null,
-    isMac: boolean
+    whatTheDubDirectory: string | null;
+    rifftraxDirectory: string | null;
+    isMac: boolean;
 }
 
 const defaultConfig : Config = {

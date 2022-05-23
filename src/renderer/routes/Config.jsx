@@ -2,6 +2,7 @@ import React, {useState, useEffect} from 'react';
 
 const Config = (props) => {
     const [config, setConfig] = useState({});
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         getConfig();
@@ -16,6 +17,7 @@ const Config = (props) => {
     };
 
     const save = async (newConfig) => {
+        setError(null);
         await window.api.send("updateConfig", newConfig);
     }
 
@@ -29,6 +31,11 @@ const Config = (props) => {
 
         if (filePath) {
             let newConfig = updateConfig(field, filePath);
+
+            if (!window.api.send("fileExists", filePath + "/StreamingAssets")) {
+                setError("The directory you set doesn't contain the StreamingAssets folder");
+                return;
+            }
             save(newConfig);
         }
     }
@@ -45,6 +52,8 @@ const Config = (props) => {
     return (
         <div>
             <h3>Application Config</h3>
+            <div style={{color: "red"}}>{error}</div>
+            <p>Set the following paths to the folder that contains the "StreamingAssets" folder within itself.</p>
             <table style={{margin: "auto"}}>
                 <tbody>
                     <tr>
@@ -59,7 +68,7 @@ const Config = (props) => {
                     </tr>
                 </tbody>
             </table>
-            {props.onRefresh ? <button onClick={() => {props.onRefresh()}} disabled={!config.rifftraxDirectory && !config.whatTheDubDirectory}>Save</button> : null}
+            {props.onRefresh ? <button onClick={() => {props.onRefresh()}} disabled={error || !config.rifftraxDirectory && !config.whatTheDubDirectory}>Save</button> : null}
         </div>
     )
 }

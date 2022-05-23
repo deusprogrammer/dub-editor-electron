@@ -9,10 +9,11 @@ let ClipEditor = () => {
     const params = useParams();
     const navigate = useNavigate();
 
+    const [error, setError] = useState(null);
     const [clipNumber, setClipNumber] = useState(1);
     const [videoSource, setVideoSource] = useState("");
     const [subs, setSubs] = useState([]);
-    const [videoName, setVideoName] = useState("Video");
+    const [videoName, setVideoName] = useState(null);
     const [currentSub, setCurrentSub] = useState(null);
     const [substitution, setSubstitution] = useState("");
     const [buttonsDisabled, setButtonsDisabled] = useState(false);
@@ -110,10 +111,35 @@ let ClipEditor = () => {
         }
     }
 
+    let updateVideoName = async (title) => {
+        setVideoName(title);
+        let result = await window.api.send("clipExists", {title, clipNumber, game: params.type});
+        
+        if (result) {
+            setError("Clip with this name and number already exists");
+            return;
+        }
+
+        setError(null);
+    }
+
+    let updateClipNumber = async (clipNumber) => {
+        setClipNumber(clipNumber);
+        let result = await window.api.send("clipExists", {title: videoName, clipNumber, game: params.type});
+
+        if (result) {
+            setError("Clip with this name and number already exists");
+            return;
+        }
+
+        setError(null);
+    }
+
     return (
         <div>
             <h3>{game} Clip Editor</h3>
             <Link to="/">Back</Link>
+            <div style={{color: "red"}}>{error}</div>
             { videoSource ?
                 <div>
                     <div style={{display: "table", margin: "auto"}}>
@@ -175,13 +201,13 @@ let ClipEditor = () => {
                         </div>
                         <div style={{display: "table-cell"}}>
                             <div>
-                                <h3>Clip Metadata</h3>
+                                <h3>Clip Metadata (Required)</h3>
                                 <table>
                                     <tr>
-                                        <td>Video Title</td><td><input type="text" value={videoName} onChange={(e) => {setVideoName(e.target.value)}} /></td>
+                                        <td>Video Title</td><td><input type="text" value={videoName} onChange={(e) => {updateVideoName(e.target.value)}} /></td>
                                     </tr>
                                     <tr>
-                                        <td>Clip Number</td><td><input type="number" min={1} max={999} maxLength={3} value={clipNumber} onChange={(e) => {setClipNumber(Math.min(e.target.value, 999))}} /></td>
+                                        <td>Clip Number</td><td><input type="number" min={1} max={999} maxLength={3} value={clipNumber} onChange={(e) => {updateClipNumber(Math.min(e.target.value, 999))}} /></td>
                                     </tr>
                                 </table>
                             </div>
@@ -296,7 +322,7 @@ let ClipEditor = () => {
                         </div>
                     </div>
                     <hr />
-                    <button type="button" onClick={() => {addVideoToGame()}} disabled={buttonsDisabled}>Add Clip</button>
+                    <button type="button" onClick={() => {addVideoToGame()}} disabled={!videoName || error || buttonsDisabled}>Add Clip</button>
                 </div>
                 :
                 <div>

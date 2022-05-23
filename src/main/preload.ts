@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld('api', {
     send: async (channel: string, args: any) => {
         // whitelist channels
         let validChannels = [
+            "clipExists",
+            "fileExists",
             "updateConfig",
             "getConfig",
             "getVideos",
