@@ -42,7 +42,7 @@ let App = (props) => {
         <div className="App">
             <ToastContainer />
             <Router>
-                <h1>What the Dub Tools</h1>
+                <h1>Dub Editor</h1>
                 <hr/>
                 <div>{VERSION}</div>
                 <hr/>
