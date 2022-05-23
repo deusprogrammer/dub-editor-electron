@@ -1,5 +1,5 @@
 {
-  "description": "A foundation for scalable desktop apps",
+  "description": "An application for creating and managing clips for What the Dub and Rifftrax",
   "keywords": [
     "electron",
     "boilerplate",
@@ -21,17 +21,10 @@
   },
   "license": "MIT",
   "author": {
-    "name": "Electron React Boilerplate Maintainers",
-    "email": "electronreactboilerplate@gmail.com",
-    "url": "https://electron-react-boilerplate.js.org"
+    "name": "Michael C. Main",
+    "email": "deusprogrammer@gmail.com",
+    "url": "https://deusprogrammer.com/util/wtd-tool"
   },
-  "contributors": [
-    {
-      "name": "Amila Welihinda",
-      "email": "amilajack@gmail.com",
-      "url": "https://github.com/amilajack"
-    }
-  ],
   "main": "./src/main/main.ts",
   "scripts": {
     "build": "concurrently \"npm run build:main\" \"npm run build:renderer\"",
@@ -113,7 +106,8 @@
     "electron-updater": "^5.0.1",
     "react": "^18.1.0",
     "react-dom": "^18.1.0",
-    "react-router-dom": "^6.3.0"
+    "react-router-dom": "^6.3.0",
+    "react-toastify": "^9.0.1"
   },
   "devDependencies": {
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.6",
@@ -183,8 +177,8 @@
     "webpack-merge": "^5.8.0"
   },
   "build": {
-    "productName": "ElectronReact",
-    "appId": "org.erb.ElectronReact",
+    "productName": "Dub Editor",
+    "appId": "com.trinary.dub-editor",
     "asar": true,
     "asarUnpack": "**\\*.{node,dll}",
     "files": [

@@ -9,11 +9,17 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import fs from 'fs';
+import { app, BrowserWindow, dialog, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+
+import defaultConfig from './defaultConfig';
+
+const HOME : string = process.env.HOME || "/";
+const CONFIG_FILE : string = `${HOME}/.dub-editor-config.json`;
 
 export default class AppUpdater {
   constructor() {
@@ -25,11 +31,18 @@ export default class AppUpdater {
 
 let mainWindow: BrowserWindow | null = null;
 
-ipcMain.on('ipc-example', async (event, arg) => {
-  const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
-  console.log(msgTemplate(arg));
-  event.reply('ipc-example', msgTemplate('pong'));
-});
+let config = defaultConfig;
+if (process.platform === 'darwin') {
+    config.whatTheDubDirectory = "~/Library/Application Support/Steam/steamapps/common/WhatTheDub/WhatTheDub.app/Contents/Resources/Data";
+    config.rifftraxDirectory = "~/Library/Application Support/Steam/steamapps/common/RiffTraxTheGame/RiffTraxTheGame.app/Contents/Resources/Data";
+    config.isMac = true;
+}
+
+if (!fs.existsSync(CONFIG_FILE)) {
+    fs.writeFileSync(CONFIG_FILE, Buffer.from(JSON.stringify(config, null, 5)));
+} else {
+    config = JSON.parse(fs.readFileSync(CONFIG_FILE, {}).toString());
+}
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -71,8 +84,8 @@ const createWindow = async () => {
 
   mainWindow = new BrowserWindow({
     show: false,
-    width: 1024,
-    height: 728,
+    width: 1920,
+    height: 1080,
     icon: getAssetPath('icon.png'),
     webPreferences: {
       preload: app.isPackaged
@@ -135,3 +148,140 @@ app
     });
   })
   .catch(console.log);
+
+// Bridged functionality
+
+ipcMain.handle('updateConfig', (event, newConfig) => {
+  console.log("CONFIG: " + JSON.stringify(newConfig));
+  config = newConfig;
+  fs.writeFileSync(CONFIG_FILE, Buffer.from(JSON.stringify(config, null, 5)));
+  return;
+});
+
+ipcMain.handle('getConfig', () => {
+  return config;
+});
+
+ipcMain.handle('getVideos', (event, game) => {
+  let clipsDirectory = null;
+  if (game === "rifftrax") {
+      clipsDirectory = `${config.rifftraxDirectory}/StreamingAssets/VideoClips`.replace("~", HOME);
+  } else if (game === "whatthedub") {
+      clipsDirectory = `${config.whatTheDubDirectory}/StreamingAssets/VideoClips`.replace("~", HOME);
+  } else {
+      return [];
+  }
+
+  const files = fs.readdirSync(clipsDirectory);
+  const fileObjects = files.filter(file => file.endsWith(".mp4") || file.endsWith(".mp4.disabled")).map((file) => {return {_id: file.substring(0, file.lastIndexOf(".mp4")), name: file.replace(/_/g, " ").substring(0, file.lastIndexOf(".mp4")), game, disabled: file.endsWith(".disabled")}});
+  return fileObjects;
+});
+
+ipcMain.handle('getVideo', (event, {id, game}) => {
+  console.log("Opening: " + id + " from game " + game);
+
+  let directory = null;
+  if (game === "rifftrax") {
+      directory = config.rifftraxDirectory;
+  } else if (game === "whatthedub") {
+      directory = config.whatTheDubDirectory;
+  } else {
+      return [];
+  }
+  
+  const clipsDirectory = `${directory}/StreamingAssets/VideoClips`.replace("~", HOME);
+  const subsDirectory = `${directory}/StreamingAssets/Subtitles`.replace("~", HOME);
+  const videoFilePath = `${clipsDirectory}/${id}.mp4`;
+  const subFilePath = `${subsDirectory}/${id}.srt`;
+
+  const videoBase64 = fs.readFileSync(videoFilePath, {encoding: 'base64'});
+  const subtitles = fs.readFileSync(subFilePath, {encoding: 'base64'});
+
+  return {
+      name: id.replace(/_/g, " "),
+      videoUrl: `data:video/mp4;base64,${videoBase64}`,
+      subtitles: [],
+      srtBase64: subtitles 
+  }
+});
+
+ipcMain.handle('storeVideo', (event, {base64ByteStream, subtitles, title, clipNumber, game}) => {
+  console.log(`STORING ${title}-${clipNumber} for game ${game} with subtitles ${subtitles}`);
+
+  let directory = null;
+  if (game === "rifftrax") {
+      directory = config.rifftraxDirectory;
+  } else if (game === "whatthedub") {
+      directory = config.whatTheDubDirectory;
+  } else {
+      return;
+  }
+
+  let baseFileName = title.replace(" ", "_") + `-Clip${`${clipNumber}`.padStart(3, "0")}`;
+
+  const clipsDirectory = `${directory}/StreamingAssets/VideoClips`.replace("~", HOME);
+  const subsDirectory = `${directory}/StreamingAssets/Subtitles`.replace("~", HOME);
+  const videoFilePath = `${clipsDirectory}/_${baseFileName}.mp4`;
+  const subFilePath = `${subsDirectory}/_${baseFileName}.srt`;
+
+  console.log("SAVING TO " + videoFilePath + "\n" + subFilePath);
+
+  fs.writeFileSync(videoFilePath, Buffer.from(base64ByteStream, "base64"));
+  fs.writeFileSync(subFilePath, subtitles);
+});
+
+ipcMain.handle('deleteVideo', (event, {id, game}) => {
+  console.log("DELETING " + id + " FOR GAME " + game);
+
+  let directory = null;
+  if (game === "rifftrax") {
+      directory = config.rifftraxDirectory;
+  } else if (game === "whatthedub") {
+      directory = config.whatTheDubDirectory;
+  } else {
+      return;
+  }
+  const clipsDirectory = `${directory}/StreamingAssets/VideoClips`.replace("~", HOME);
+  const subsDirectory = `${directory}/StreamingAssets/Subtitles`.replace("~", HOME);
+  const videoFilePath = `${clipsDirectory}/${id}.mp4`;
+  const subFilePath = `${subsDirectory}/${id}.srt`;
+
+  console.log("DELETING " + videoFilePath + "\n" + subFilePath);
+
+  fs.unlinkSync(videoFilePath);
+  fs.unlinkSync(subFilePath);
+});
+
+ipcMain.handle('openDialog', async () => {
+  const response = await dialog.showOpenDialog({properties: ['openDirectory', 'createDirectory'] });
+  if (!response.canceled) {
+      return response.filePaths[0];
+  } else {
+      return null;
+  }
+});
+
+ipcMain.handle('setActive', async (event, {id, game, isActive}) => {
+  console.log("TOGGLING " + id + " in game " + game + " to " + isActive);
+
+  let directory = null;
+  if (game === "rifftrax") {
+      directory = config.rifftraxDirectory;
+  } else if (game === "whatthedub") {
+      directory = config.whatTheDubDirectory;
+  } else {
+      return;
+  }
+  const clipsDirectory = `${directory}/StreamingAssets/VideoClips`.replace("~", HOME);
+  const subsDirectory = `${directory}/StreamingAssets/Subtitles`.replace("~", HOME);
+  const videoFilePath = `${clipsDirectory}/${id}.mp4`;
+  const subFilePath = `${subsDirectory}/${id}.srt`;
+
+  if(isActive) {
+      fs.renameSync(`${videoFilePath}.disabled`, videoFilePath);
+      fs.renameSync(`${subFilePath}.disabled`, subFilePath);
+  } else {
+      fs.renameSync(videoFilePath, `${videoFilePath}.disabled`);
+      fs.renameSync(subFilePath, `${subFilePath}.disabled`);
+  }
+});

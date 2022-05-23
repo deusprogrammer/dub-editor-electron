@@ -1,21 +1,24 @@
-import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
 
 export type Channels = 'ipc-example';
 
-contextBridge.exposeInMainWorld('electron', {
-  ipcRenderer: {
-    sendMessage(channel: Channels, args: unknown[]) {
-      ipcRenderer.send(channel, args);
-    },
-    on(channel: Channels, func: (...args: unknown[]) => void) {
-      const subscription = (_event: IpcRendererEvent, ...args: unknown[]) =>
-        func(...args);
-      ipcRenderer.on(channel, subscription);
-
-      return () => ipcRenderer.removeListener(channel, subscription);
-    },
-    once(channel: Channels, func: (...args: unknown[]) => void) {
-      ipcRenderer.once(channel, (_event, ...args) => func(...args));
-    },
-  },
+contextBridge.exposeInMainWorld('api', {
+    send: async (channel: string, args: any) => {
+        // whitelist channels
+        let validChannels = [
+            "updateConfig",
+            "getConfig",
+            "getVideos",
+            "getVideo",
+            "storeVideo",
+            "setActive",
+            "deleteVideo",
+            "openDialog"
+        ];
+        if (validChannels.includes(channel)) {
+            return await ipcRenderer.invoke(channel, args);
+        } else {
+            throw `Invalid channel: ${channel}`;
+        }
+    }
 });
