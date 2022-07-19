@@ -18,6 +18,8 @@ import { resolveHtmlPath } from './util';
 
 import defaultConfig from './defaultConfig';
 
+const StreamZip = require('node-stream-zip');
+
 const HOME : string = process.platform === 'darwin' ? process.env.HOME || "/" : `${process.env.HOMEDRIVE}${process.env.HOMEPATH}/AppData/Local/DubEditor`;
 const CONFIG_FILE : string = `${HOME}/.dub-editor-config.json`;
 const COLLECTIONS_FILE : string = `${HOME}/.dub-editor-collections.json`;
@@ -34,6 +36,28 @@ let mainWindow: BrowserWindow | null = null;
 
 const createClipName = (title : string, clipNumber : number) => {
     return title.replace(" ", "_") + `-Clip${`${clipNumber}`.padStart(3, "0")}`;
+}
+
+const importZip = async (filePath : string, game : string) => {
+    let directory = null;
+    if (game === "rifftrax") {
+        directory = config.rifftraxDirectory;
+    } else if (game === "whatthedub") {
+        directory = config.whatTheDubDirectory;
+    } else {
+        return;
+    }
+    
+    const zip = new StreamZip.async({ file: filePath });
+    const entries = await zip.entries();
+    const videoIdList = Object.values(entries).filter((entry : any) => entry.name.startsWith("StreamingAssets/VideoClips") && entry.name.endsWith(".mp4")).map((entry : any) => entry.name.substring(entry.name.lastIndexOf("/") + 1, entry.name.lastIndexOf(".mp4")));
+
+    console.log(JSON.stringify(videoIdList, null, 5));
+
+    // const gameDirectory = `${directory}/`.replace("~", HOME);
+
+    // await zip.extract(null, gameDirectory);
+    // await zip.close();
 }
 
 const toggleAllVideos = (game : string, isActive : boolean, except : Array<String> = []) => {
@@ -458,6 +482,15 @@ ipcMain.handle('setActive', async (event, {id, game, isActive}) => {
         fs.renameSync(videoFilePath, `${videoFilePath}.disabled`);
         fs.renameSync(subFilePath, `${subFilePath}.disabled`);
     }
+});
+
+ipcMain.handle('importZip', async (event, game) => {
+    console.log("IMPORTING ZIP");
+    const response = await dialog.showOpenDialog({properties: ['openFile'], filters: [{ name: 'Zip File', extensions: ['zip']}]});
+    if (response.canceled) {
+        return null;
+    }
+    importZip(response.filePaths[0], game);
 });
 
 ipcMain.handle('disableVideos', async (event, {game, except}) => {

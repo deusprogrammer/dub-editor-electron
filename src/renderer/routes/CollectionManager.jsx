@@ -46,12 +46,16 @@ export default () => {
         window.open(`steam://run/${gameId}`)
     }
 
+    const importZip = async () => {
+        await window.api.send("importZip", game);
+    }
+
     if (!selected) {
         return (
             <div>
                 <h2>Pack Manager ({game})</h2>
                 <h3>Actions</h3>
-                <button type="button" onClick={() => {}}>Import Clip Pack</button>
+                <button type="button" onClick={() => {importZip()}}>Import Clip Pack</button>
                 <h3>Clip Packs</h3>
                 <table style={{margin: "auto"}}>
                     <tbody>
