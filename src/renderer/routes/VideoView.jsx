@@ -17,7 +17,9 @@ let VideoView = (props) => {
 
     return (
         <div>
-            <Link to="/">Back</Link>
+            <br />
+            <Link to="/"><button>Back to Clip List</button></Link>
+            <br /><br />
             {videoDetails ? <div>
                 <div>Name: {videoDetails.name}</div>
                 <div>

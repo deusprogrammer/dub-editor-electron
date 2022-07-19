@@ -13,8 +13,14 @@ contextBridge.exposeInMainWorld('api', {
             "getVideos",
             "getVideo",
             "storeVideo",
-            "setActive",
             "deleteVideo",
+            "disableVideos",
+            "createCollection",
+            "deleteCollection",
+            "getCollections",
+            "addToCollection",
+            "removeFromCollection",
+            "setActive",
             "openDialog"
         ];
         if (validChannels.includes(channel)) {

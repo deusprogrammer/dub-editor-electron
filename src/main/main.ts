@@ -20,6 +20,7 @@ import defaultConfig from './defaultConfig';
 
 const HOME : string = process.platform === 'darwin' ? process.env.HOME || "/" : `${process.env.HOMEDRIVE}${process.env.HOMEPATH}/AppData/Local/DubEditor`;
 const CONFIG_FILE : string = `${HOME}/.dub-editor-config.json`;
+const COLLECTIONS_FILE : string = `${HOME}/.dub-editor-collections.json`;
 
 export default class AppUpdater {
     constructor() {
@@ -31,6 +32,46 @@ export default class AppUpdater {
 
 let mainWindow: BrowserWindow | null = null;
 
+const createClipName = (title : string, clipNumber : number) => {
+    return title.replace(" ", "_") + `-Clip${`${clipNumber}`.padStart(3, "0")}`;
+}
+
+const toggleAllVideos = (game : string, isActive : boolean, except : Array<String> = []) => {
+    let clipsDirectory : string = "";
+    let subsDirectory : string = "";
+    if (game === "rifftrax") {
+        clipsDirectory = `${config.rifftraxDirectory}/StreamingAssets/VideoClips`.replace("~", HOME);
+        subsDirectory = `${config.rifftraxDirectory}/StreamingAssets/Subtitles`.replace("~", HOME);
+    } else if (game === "whatthedub") {
+        clipsDirectory = `${config.whatTheDubDirectory}/StreamingAssets/VideoClips`.replace("~", HOME);
+        subsDirectory = `${config.rifftraxDirectory}/StreamingAssets/Subtitles`.replace("~", HOME);
+    } else {
+        return;
+    }
+
+    const files : Array<string> = fs.readdirSync(clipsDirectory);
+    const fileObjects : Array<any> = files.filter(file => file.endsWith(".mp4") || file.endsWith(".mp4.disabled")).map((file) => {return {_id: file.substring(0, file.lastIndexOf(".mp4")), name: file.replace(/_/g, " ").substring(0, file.lastIndexOf(".mp4")), game, disabled: file.endsWith(".disabled")}});
+    fileObjects.forEach(({_id : id}) => {
+        const videoFilePath = `${clipsDirectory}/${id}.mp4`;
+        const subFilePath = `${subsDirectory}/${id}.srt`;
+        if (except.includes(id)) {
+            return;
+        }
+        console.log(`${isActive ? "Enabling" : "Disabling"} video with id ${id}`)
+        try {
+            if(isActive) {
+                fs.renameSync(`${videoFilePath}.disabled`, videoFilePath);
+                fs.renameSync(`${subFilePath}.disabled`, subFilePath);
+            } else {
+                fs.renameSync(videoFilePath, `${videoFilePath}.disabled`);
+                fs.renameSync(subFilePath, `${subFilePath}.disabled`);
+            }
+        } catch (e) {
+        }
+    });
+}
+
+// Load default config
 let config = defaultConfig;
 if (process.platform === 'darwin') {
     config.whatTheDubDirectory = "~/Library/Application Support/Steam/steamapps/common/WhatTheDub/WhatTheDub.app/Contents/Resources/Data";
@@ -38,12 +79,29 @@ if (process.platform === 'darwin') {
     config.isMac = true;
 }
 
+// If config doesn't exist, then create it
 if (!fs.existsSync(CONFIG_FILE)) {
     fs.mkdirSync(HOME, {recursive: true});
     fs.writeFileSync(CONFIG_FILE, Buffer.from(JSON.stringify(config, null, 5)));
 } else {
     config = JSON.parse(fs.readFileSync(CONFIG_FILE, {}).toString());
 }
+
+// Load default collections, and if the file for collections doesn't exist create it
+let collections : {[key: string] : any} = {
+    "whatthedub": {},
+    "rifftrax": {}
+};
+if (!fs.existsSync(COLLECTIONS_FILE)) {
+    fs.mkdirSync(HOME, {recursive: true});
+    fs.writeFileSync(COLLECTIONS_FILE, Buffer.from(JSON.stringify(collections, null, 5)));
+} else {
+    collections = JSON.parse(fs.readFileSync(COLLECTIONS_FILE, {}).toString());
+}
+
+// Toggle all files back on
+toggleAllVideos("rifftrax", true);
+toggleAllVideos("whatthedub", true);
 
 if (process.env.NODE_ENV === 'production') {
     const sourceMapSupport = require('source-map-support');
@@ -150,10 +208,6 @@ app
     })
   .catch(console.log);
 
-const createClipName = (title : string, clipNumber : number) => {
-    return title.replace(" ", "_") + `-Clip${`${clipNumber}`.padStart(3, "0")}`;
-}
-
 // Bridged functionality
 
 ipcMain.handle('fileExists', (event, filePath) => {
@@ -204,7 +258,7 @@ ipcMain.handle('getVideos', (event, game) => {
     }
 
     const files = fs.readdirSync(clipsDirectory);
-    const fileObjects = files.filter(file => file.endsWith(".mp4") || file.endsWith(".mp4.disabled")).map((file) => {return {_id: file.substring(0, file.lastIndexOf(".mp4")), name: file.replace(/_/g, " ").substring(0, file.lastIndexOf(".mp4")), game, disabled: file.endsWith(".disabled")}});
+    const fileObjects : Array<any> = files.filter(file => file.endsWith(".mp4") || file.endsWith(".mp4.disabled")).map((file) => {return {_id: file.substring(0, file.lastIndexOf(".mp4")), name: file.replace(/_/g, " ").substring(0, file.lastIndexOf(".mp4")), game, disabled: file.endsWith(".disabled")}});
     return fileObjects;
 });
 
@@ -220,13 +274,13 @@ ipcMain.handle('getVideo', (event, {id, game}) => {
         return [];
     }
     
-    const clipsDirectory = `${directory}/StreamingAssets/VideoClips`.replace("~", HOME);
-    const subsDirectory = `${directory}/StreamingAssets/Subtitles`.replace("~", HOME);
-    const videoFilePath = `${clipsDirectory}/${id}.mp4`;
-    const subFilePath = `${subsDirectory}/${id}.srt`;
+    const clipsDirectory : string = `${directory}/StreamingAssets/VideoClips`.replace("~", HOME);
+    const subsDirectory : string = `${directory}/StreamingAssets/Subtitles`.replace("~", HOME);
+    const videoFilePath : string = `${clipsDirectory}/${id}.mp4`;
+    const subFilePath : string = `${subsDirectory}/${id}.srt`;
 
-    const videoBase64 = fs.readFileSync(videoFilePath, {encoding: 'base64'});
-    const subtitles = fs.readFileSync(subFilePath, {encoding: 'base64'});
+    const videoBase64 : string = fs.readFileSync(videoFilePath, {encoding: 'base64'});
+    const subtitles : string = fs.readFileSync(subFilePath, {encoding: 'base64'});
 
     return {
         name: id.replace(/_/g, " "),
@@ -288,6 +342,90 @@ ipcMain.handle('deleteVideo', (event, {id, game, isActive}) => {
     fs.unlinkSync(subFilePath);
 });
 
+ipcMain.handle('createCollection', (event, {collectionId, game}) => {
+    console.log(`CREATING COLLECTION ${collectionId} for game ${game}`);
+
+    // If the collection isn't present, create a key and an empty array for it.
+    if (!(collectionId in collections[game])) {
+        collections[game][collectionId] = [];
+    }
+
+    // Store updated file
+    fs.writeFileSync(COLLECTIONS_FILE, JSON.stringify(collections, null, 5));
+
+    return collections[game];
+});
+
+ipcMain.handle('deleteCollection', (event, {collectionId, game}) => {
+    console.log(`DELETING COLLECTION ${collectionId} for game ${game}`);
+
+    // If the collection isn't present, create a key and an empty array for it.
+    if (!(collectionId in collections[game]) && collectionId !== "Originals") {
+        return;
+    }
+
+    delete collections[game][collectionId];
+
+    // Store updated file
+    fs.writeFileSync(COLLECTIONS_FILE, JSON.stringify(collections, null, 5));
+
+    return collections[game];
+});
+
+ipcMain.handle('addToCollection', (event, {collectionId, videoId, game}) => {
+    console.log(`ADDING ${videoId} for game ${game} to collection ${collectionId}`);
+
+    // If the collection isn't present, create a key and an empty array for it.
+    if (!(collectionId in collections[game])) {
+        collections[game][collectionId] = [];
+    }
+
+    // Add video id to collection list if it's not already present.
+    if (!collections[game][collectionId].includes(videoId)) {
+        collections[game][collectionId].push(videoId);
+    }
+
+    // Store updated file
+    fs.writeFileSync(COLLECTIONS_FILE, JSON.stringify(collections, null, 5));
+    return collections[game];
+});
+
+ipcMain.handle('removeFromCollection', (event, {collectionId, videoId, game}) => {
+    console.log(`REMOVING ${videoId} for game ${game} to collection ${collectionId}`);
+
+    // If the collection isn't present, return immediately.
+    if (!(collectionId in collections[game])) {
+        return;
+    }
+
+    // Filter out videoId that's being removed.
+    collections[game][collectionId].filter((element : string) => element !== videoId);
+
+    // Store updated file
+    fs.writeFileSync(COLLECTIONS_FILE, JSON.stringify(collections, null, 5));
+    return collections[game];
+});
+
+ipcMain.handle('renameCollection', (event, {oldCollectionId, newCollectionId, game}) => {
+    console.log(`RENAME ${oldCollectionId} for game ${game} to ${newCollectionId}`);
+
+    // If the collection isn't present or the new name is already in use, return immediately.
+    if (!(oldCollectionId in collections) || newCollectionId in collections) {
+        return;
+    }
+
+    // Transfer data from one key to the other.
+    let collectionData = collections[game][oldCollectionId];
+    collections[game][newCollectionId] = collectionData;
+    delete collections[game][oldCollectionId];
+
+    return collections[game];
+});
+
+ipcMain.handle('getCollections', (event, game) => {
+    return collections[game];
+});
+
 ipcMain.handle('openDialog', async () => {
     const response = await dialog.showOpenDialog({properties: ['openDirectory', 'createDirectory'] });
     if (!response.canceled) {
@@ -320,4 +458,10 @@ ipcMain.handle('setActive', async (event, {id, game, isActive}) => {
         fs.renameSync(videoFilePath, `${videoFilePath}.disabled`);
         fs.renameSync(subFilePath, `${subFilePath}.disabled`);
     }
+});
+
+ipcMain.handle('disableVideos', async (event, {game, except}) => {
+    console.log("DISABLING ALL VIDEOS EXCEPT " + JSON.stringify(except) + " in game " + game);
+    toggleAllVideos(game, true);
+    toggleAllVideos(game, false, except);
 });
