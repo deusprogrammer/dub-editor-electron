@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router';
+import { toast } from 'react-toastify';
 
 export default () => {
     const {game} = useParams();
@@ -23,11 +24,13 @@ export default () => {
         const collectionMap = await window.api.send("createCollection", {game, collectionId: newCollectionName});
         setCollections(collectionMap);
         setNewCollectionName("");
+        toast("Created new clip pack!", {type: "info"});
     }
 
     const deleteCollection = async (collectionId) => {
         const collectionMap = await window.api.send("deleteCollection", {game, collectionId});
         setCollections(collectionMap);
+        toast("Deleted clip pack!", {type: "info"});
     }
 
     const removeFromCollection = async (collectionId, videoId) => {
@@ -43,11 +46,19 @@ export default () => {
     const launch = async (except) => {
         const gameId = game === "rifftrax" ? "1707870" : "1495860";
         await window.api.send("disableVideos", {game, except});
-        window.open(`steam://run/${gameId}`)
+        window.open(`steam://run/${gameId}`);
+    }
+
+    const exportCollection = (collectionId) => {
+        window.api.send("exportCollection", {game, collectionId});
+        toast("Exporting clip pack...", {type: "info"});
     }
 
     const importZip = async () => {
-        await window.api.send("importZip", game);
+        toast("Importing clip pack...", {type: "info"});
+        const collectionMap = await window.api.send("importZip", game);
+        setCollections(collectionMap);
+        toast("Imported new clip pack!", {type: "info"});
     }
 
     if (!selected) {
@@ -70,7 +81,7 @@ export default () => {
                             return (
                                 <tr key={key}>
                                     <td style={{textAlign: "left"}}><b>{key}</b> ({collections[key].length} videos)</td>
-                                    <td><button onClick={() => {launch(collections[key])}}>Launch</button><button onClick={() => {setSelected(key)}}>Edit</button><button onClick={() => {}}>Export</button><button type="button" onClick={() => {deleteCollection(key)}}>Delete</button></td>
+                                    <td><button onClick={() => {launch(collections[key])}}>Launch</button><button onClick={() => {setSelected(key)}}>Edit</button><button onClick={() => {exportCollection(key)}}>Export</button><button type="button" onClick={() => {deleteCollection(key)}}>Delete</button></td>
                                 </tr>);
                         })}
                     </tbody>

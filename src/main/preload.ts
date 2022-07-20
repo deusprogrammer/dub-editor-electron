@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('api', {
             "getCollections",
             "addToCollection",
             "removeFromCollection",
+            "exportCollection",
             "setActive",
             "openDialog",
             "importZip"

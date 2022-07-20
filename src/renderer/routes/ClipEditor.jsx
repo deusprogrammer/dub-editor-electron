@@ -137,8 +137,8 @@ let ClipEditor = () => {
 
     return (
         <div>
-            <h3>{game} Clip Editor</h3>
-            <Link to="/">Back</Link>
+            <Link to={`/videos/${game}`}><button>Back to Clips</button></Link>
+            <h2>{game} Clip Editor</h2>
             <div style={{color: "red"}}>{error}</div>
             { videoSource ?
                 <div>
