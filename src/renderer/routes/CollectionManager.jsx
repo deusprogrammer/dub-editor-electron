@@ -49,15 +49,18 @@ export default () => {
         window.open(`steam://run/${gameId}`);
     }
 
-    const exportCollection = (collectionId) => {
-        window.api.send("exportCollection", {game, collectionId});
-        toast("Exporting clip pack...", {type: "info"});
+    const exportCollection = async (collectionId) => {
+        let t = toast("Exporting clip pack.", {autoClose: false});
+        await window.api.send("exportCollection", {game, collectionId});
+        toast.dismiss(t);
+        toast("Exported clip pack!");
     }
 
     const importZip = async () => {
-        toast("Importing clip pack...", {type: "info"});
+        let t = toast("Importing clip pack.", {autoClose: false});
         const collectionMap = await window.api.send("importZip", game);
         setCollections(collectionMap);
+        toast.dismiss(t);
         toast("Imported new clip pack!", {type: "info"});
     }
 

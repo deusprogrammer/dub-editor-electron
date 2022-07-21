@@ -54,14 +54,14 @@ const importZip = async (filePath : string, game : string) => {
     const entries = await zip.entries();
     const videoIdList = Object.values(entries).filter((entry : any) => entry.name.startsWith("StreamingAssets/VideoClips") && entry.name.endsWith(".mp4")).map((entry : any) => entry.name.substring(entry.name.lastIndexOf("/") + 1, entry.name.lastIndexOf(".mp4")));
 
-    // Extract video files to resources folder
-    const gameDirectory = `${directory}/`.replace("~", HOME);
-    await zip.extract(null, gameDirectory);
+    // Extract the video clips and subtitles
+    const clipsDirectory = `${directory}/StreamingAssets/VideoClips`.replace("~", HOME);
+    const subsDirectory = `${directory}/StreamingAssets/Subtitles`.replace("~", HOME);
+    await zip.extract("StreamingAssets/VideoClips", clipsDirectory);
+    await zip.extract("StreamingAssets/Subtitles", subsDirectory);
     await zip.close();
 
     // Rename videos so they will be treated as custom clips
-    const clipsDirectory = `${directory}/StreamingAssets/VideoClips`.replace("~", HOME);
-    const subsDirectory = `${directory}/StreamingAssets/Subtitles`.replace("~", HOME);
     videoIdList.forEach(videoId => {
         if (videoId.startsWith("_")) {
             return;
