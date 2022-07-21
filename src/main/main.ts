@@ -48,7 +48,7 @@ const importZip = async (filePath : string, game : string) => {
     } else {
         return;
     }
-    
+
     // Extract video names from zip
     const zip = new StreamZip.async({ file: filePath });
     const entries = await zip.entries();
@@ -71,7 +71,7 @@ const importZip = async (filePath : string, game : string) => {
     });
 
     // Create and add a collection
-    const collectionId : string = filePath.substring(filePath.lastIndexOf("/") + 1, filePath.lastIndexOf(".zip"));
+    const collectionId : string = filePath.substring(filePath.lastIndexOf(path.sep) + 1, filePath.lastIndexOf(".zip"));
     addToCollection(game, collectionId, videoIdList.map(videoId => {
         if (videoId.startsWith("_")) {
             return videoId;
@@ -96,7 +96,7 @@ const exportToZip = async (filePath : string, collectionId : string, game : stri
 
     const zip : JSZip = new JSZip();
     zip.file(zipFilePath);
-    
+
     let root = zip.folder("StreamingAssets");
     collections[game][collectionId].forEach((videoId : string) => {
         let videoFilePath : string = `${clipsDirectory}/${videoId}.mp4`;
@@ -369,7 +369,7 @@ ipcMain.handle('getVideo', (event, {id, game}) => {
     } else {
         return [];
     }
-    
+
     const clipsDirectory : string = `${directory}/StreamingAssets/VideoClips`.replace("~", HOME);
     const subsDirectory : string = `${directory}/StreamingAssets/Subtitles`.replace("~", HOME);
     const videoFilePath : string = `${clipsDirectory}/${id}.mp4`;
@@ -382,7 +382,7 @@ ipcMain.handle('getVideo', (event, {id, game}) => {
         name: id.replace(/_/g, " "),
         videoUrl: `data:video/mp4;base64,${videoBase64}`,
         subtitles: [],
-        srtBase64: subtitles 
+        srtBase64: subtitles
     }
 });
 
@@ -531,7 +531,7 @@ ipcMain.handle('exportCollection', async (event, {collectionId, game}) => {
     if (response.canceled) {
         return null;
     }
-    
+
     exportToZip(response.filePaths[0], collectionId, game);
 });
 
