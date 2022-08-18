@@ -4,6 +4,7 @@ import WhatTheDubPlayer from '../components/WhatTheDubPlayer';
 import {addVideo} from '../util/VideoTools';
 import {useParams, useNavigate} from 'react-router';
 import { Link } from 'react-router-dom';
+import TimeLine from 'renderer/components/TimeLine';
 
 let ClipEditor = () => {
     const params = useParams();
@@ -163,41 +164,17 @@ let ClipEditor = () => {
                                 onVideoLoaded={(video) => {
                                     setVideoLength(video.duration);
                                 }} />
-                            <div>
-                                <button onClick={() => {scrub(Math.max(0, currentPosition - (1/60)))}}>&lt;</button>
-                                {!isPlaying ? <button onClick={() => {setIsPlaying(true);}}>Play</button> :<button onClick={() => {setIsPlaying(false);}}>Pause</button>}
-                                <button onClick={() => {scrub(currentPosition + (1/60))}}>&gt;</button>
-                            </div>
-                            <div>
-                                <input 
-                                    type="range" 
-                                    style={{width: "500px", padding: "0px", margin: "0px"}} 
-                                    value={currentSliderPosition} 
-                                    step={1/60}
-                                    max={videoLength}
-                                    onChange={(e) => {scrub(e.target.value)}} />
-                                <div style={{width: "500px", height: "25px", position: "relative"}}>
-                                    <div style={{position: "absolute", left: currentSliderPosition/videoLength * 500 + "px", width: "2px", height: "20px", backgroundColor: "black", zIndex: 9999}} />
-                                    {subs.map((sub, index) => {
-                                        return (
-                                            <div 
-                                            onClick={() => {
-                                                setCurrentSub(index);
-                                            }}
-                                            style={{
-                                                position: "absolute",
-                                                left: (500 * (sub.startTime/videoLength)) + "px",
-                                                width: (500 * ((sub.endTime - sub.startTime)/videoLength)) + "px",
-                                                height: "20px",
-                                                backgroundColor: "yellow",
-                                                border: "1px solid black",
-                                                cursor: "pointer"
-                                            }}>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            </div>
+                            <TimeLine 
+                                timelineWidth={500}
+                                isPlaying={isPlaying}
+                                currentSliderPosition={currentSliderPosition}
+                                videoLength={videoLength}
+                                subs={subs}
+                                onStateChange={setIsPlaying}
+                                onSubSelect={setCurrentSub}
+                                onSubsChange={() => {}}
+                                onSliderPositionChange={scrub}
+                            />
                         </div>
                         <div style={{display: "table-cell"}}>
                             <div>
