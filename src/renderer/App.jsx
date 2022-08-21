@@ -48,22 +48,26 @@ let App = (props) => {
         );
     }
 
+    console.log("LOCATION: " + location.pathname);
+
     return (
         <div className="App">
             <ToastContainer />
-            <h1>Dub Editor</h1>
-            <hr/>
-            <div>{VERSION}</div>
-            <label>Game:</label>
-            <select value={game} onChange={({target: {value}}) => {changeGame(value)}}>
-                <option value="rifftrax">Rifftrax</option>
-                <option value="whatthedub">What the Dub</option>
-            </select>
-            <hr/>
-            <Link className={({isActive}) => isActive ? "active" : null} to={`/videos/${game}`}>Clips</Link>|
-            <Link className={({isActive}) => isActive ? "active" : null} to={`/collections/${game}`}>Packs</Link>|
-            <Link className={({isActive}) => isActive ? "active" : null} to={`/config/${game}`}>Config</Link>|
-            <Link className={({isActive}) => isActive ? "active" : null} to={`/about/${game}`}>About</Link>
+            {location.pathname !== `/create/${game}` ? <div>
+                <h1>Dub Editor</h1>
+                <hr/>
+                <div>{VERSION}</div>
+                <label>Game:</label>
+                <select value={game} onChange={({target: {value}}) => {changeGame(value)}}>
+                    <option value="rifftrax">Rifftrax</option>
+                    <option value="whatthedub">What the Dub</option>
+                </select>
+                <hr/>
+                <Link className={({isActive}) => isActive ? "active" : null} to={`/videos/${game}`}>Clips</Link>|
+                <Link className={({isActive}) => isActive ? "active" : null} to={`/collections/${game}`}>Packs</Link>|
+                <Link className={({isActive}) => isActive ? "active" : null} to={`/config/${game}`}>Config</Link>|
+                <Link className={({isActive}) => isActive ? "active" : null} to={`/about/${game}`}>About</Link>
+            </div> : null}
             <div style={{minHeight: "50vh"}}>
                 <Routes>
                     <Route exact path={`/about/:game`} element={<About />} />

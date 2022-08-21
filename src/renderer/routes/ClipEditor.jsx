@@ -1,10 +1,12 @@
 import React, {useState} from 'react';
-import {toast} from 'react-toastify';
-import WhatTheDubPlayer from '../components/WhatTheDubPlayer';
-import {addVideo} from '../util/VideoTools';
 import {useParams, useNavigate} from 'react-router';
 import { Link } from 'react-router-dom';
-import TimeLine from 'renderer/components/TimeLine';
+import {toast} from 'react-toastify';
+import {addVideo} from '../util/VideoTools';
+
+import WhatTheDubPlayer from '../components/WhatTheDubPlayer';
+import TimeLine from '../components/TimeLine';
+import SubtitleList from '../components/SubtitleList'
 
 let ClipEditor = () => {
     const params = useParams();
@@ -39,7 +41,7 @@ let ClipEditor = () => {
     let newSub = (startTime) => {
         setSubs([...subs, {
             startTime,
-            endTime: startTime,
+            endTime: startTime + 2,
             text: ""
         }]);
         setCurrentSub((subs.length - 1) + 1);
@@ -93,7 +95,7 @@ let ClipEditor = () => {
     }
 
     let scrub = (seconds) => {
-        setCurrentPosition(seconds);
+        setCurrentPosition(seconds/1000);
         setCurrentSliderPosition(seconds);
         setIsPlaying(false);
     }
@@ -136,170 +138,65 @@ let ClipEditor = () => {
         setError(null);
     }
 
+    const subChangeHandler = (mode, sub, index) => {
+        if (mode === "add") {
+            setSubs([...subs, sub]);
+        } else if (mode === "edit") {
+            let subList = [...subs];
+            subList[index] = sub;
+            setSubs(subList);
+        }
+    }
+
+    const removeSub = (index) => {
+        let subList = [...subs];
+        subList.splice(index, 1);
+        setSubs(subList);
+    }
+
     return (
         <div>
-            <Link to={`/videos/${game}`}><button>Back to Clips</button></Link>
-            <h2>{game} Clip Editor</h2>
             <div style={{color: "red"}}>{error}</div>
             { videoSource ?
-                <div>
-                    <div style={{display: "table", margin: "auto"}}>
-                        <div style={{display: "table-cell", verticalAlign: "middle"}}>
-                            <h3>Video</h3>
-                            <WhatTheDubPlayer
-                                videoSource={videoSource}
-                                isPlaying={isPlaying}
-                                videoPosition={currentPosition}
-                                subs={subs}
-                                substitution={substitution}
-                                onEnd={() => {
-                                    setIsPlaying(false);
-                                }}
-                                onIndexChange={(index) => {
-                                    setCurrentSub(index);
-                                }}
-                                onVideoPositionChange={(position) => {
-                                    setCurrentSliderPosition(position);
-                                }}
-                                onVideoLoaded={(video) => {
-                                    setVideoLength(video.duration);
-                                }} />
-                            <TimeLine 
-                                timelineWidth={500}
-                                isPlaying={isPlaying}
-                                currentSliderPosition={currentSliderPosition}
-                                videoLength={videoLength}
-                                subs={subs}
-                                onStateChange={setIsPlaying}
-                                onSubSelect={setCurrentSub}
-                                onSubsChange={() => {}}
-                                onSliderPositionChange={scrub}
-                            />
-                        </div>
-                        <div style={{display: "table-cell"}}>
-                            <div>
-                                <h3>Clip Metadata (Required)</h3>
-                                <table>
-                                    <tr>
-                                        <td>Video Title</td><td><input type="text" value={videoName} onChange={(e) => {updateVideoName(e.target.value)}} /></td>
-                                    </tr>
-                                    <tr>
-                                        <td>Clip Number</td><td><input type="number" min={1} max={999} maxLength={3} value={clipNumber} onChange={(e) => {updateClipNumber(Math.min(e.target.value, 999))}} /></td>
-                                    </tr>
-                                </table>
-                            </div>
-                            <div>
-                                <h3>Current Subtitle</h3>
-                                { currentSub !== null ?
-                                    <table style={{margin: "auto"}}>
-                                        <tbody>
-                                            <tr>
-                                                <td>
-                                                    <button type="button" onClick={() => {setStart(currentSliderPosition)}}>Set Start</button>
-                                                </td>
-                                                <td>
-                                                    <span>{convertSecondsToTimestamp(subs[currentSub].startTime)}</span>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <button type="button" onClick={() => {scrub(subs[currentSub].startTime)}}>Show Start</button>
-                                                </td>
-                                                <td>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <button type="button" onClick={() => {setEnd(currentSliderPosition)}}>Set End</button>
-                                                </td>
-                                                <td>
-                                                    <span>{convertSecondsToTimestamp(subs[currentSub].endTime)}</span>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <button type="button" onClick={() => {scrub(subs[currentSub].endTime)}}>Show End</button>
-                                                </td>
-                                                <td>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <label>Subtitle:</label>
-                                                </td>
-                                                <td>
-                                                    <input 
-                                                        type="text"
-                                                        style={{width: "200px"}} 
-                                                        value={subs[currentSub].text} 
-                                                        onChange={(e) => {setText(e.target.value)}} 
-                                                        placeholder={placeholder} /><br />
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    Actions:
-                                                </td>
-                                                <td>
-                                                    {params.type === "whatthedub" ?
-                                                        <>
-                                                            <button onClick={(e) => {setText("[male_dub]")}}>Make Male Dub</button>
-                                                            <button onClick={(e) => {setText("[female_dub]")}}>Make Female Dub</button>
-                                                        </> :
-                                                        <>
-                                                            <button onClick={(e) => {setText("[Insert Riff Here]")}}>Make Riff</button>
-                                                        </>
-                                                    }
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                    :
-                                    null
-                                }
-                            </div>
-                        </div>
-                        <div style={{display: "table-cell"}}>
-                            <h3>Subtitles</h3>
-                            <div style={{overflowY: "scroll", maxHeight: "100vh"}}>
-                                <table style={{margin: "auto"}}>
-                                    <thead>
-                                        <tr>
-                                            <th></th>
-                                            <th>Start</th>
-                                            <th></th>
-                                            <th>Stop</th>
-                                            <th>Text</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                    {
-                                        subs.sort((a, b) => {
-                                            return a.startTime - b.startTime;
-                                        }).map((sub, index) => {
-                                            return (
-                                                <tr 
-                                                    style={{
-                                                        cursor: "pointer", 
-                                                        backgroundColor: index === currentSub ? "blue" : "white", 
-                                                        color: index === currentSub ? "white" :"black"
-                                                    }}
-                                                    key={`sub${index}`}
-                                                    className="subs"
-                                                    onClick={() => {setCurrentSub(index); scrub(sub.startTime);}}>
-                                                        <td>{index + 1}</td><td>{convertSecondsToTimestamp(sub.startTime)}</td><td>==&gt;</td><td>{convertSecondsToTimestamp(sub.endTime)}</td><td style={{width: "150px", textOverflow: "ellipsis"}}>{sub.text === "[male_dub]" || sub.text === "[female_dub]" ? sub.text  : `"${sub.text}"`}</td>
-                                                </tr>
-                                            )
-                                        })
-                                    }
-                                    </tbody>
-                                </table>
-                                <button type="button" onClick={() => {newSub(currentSliderPosition)}}>New Subtitle</button>
-                            </div>
-                        </div>
+                <div className="editor-container">
+                    <div className="top-pane">
+                        <WhatTheDubPlayer
+                            videoSource={videoSource}
+                            isPlaying={isPlaying}
+                            videoPosition={currentPosition}
+                            subs={subs}
+                            substitution={substitution}
+                            onEnd={() => {
+                                setIsPlaying(false);
+                            }}
+                            onIndexChange={(index) => {
+                                setCurrentSub(index);
+                            }}
+                            onVideoPositionChange={(position) => {
+                                setCurrentSliderPosition(position);
+                            }}
+                            onVideoLoaded={(video) => {
+                                setVideoLength(video.duration);
+                            }} />
+                        <SubtitleList
+                            onRemoveSub={removeSub}
+                            onSelectSub={setCurrentSub}
+                            currentSub={currentSub}
+                            subs={subs} />
                     </div>
-                    <hr />
-                    <button type="button" onClick={() => {addVideoToGame()}} disabled={!videoName || error || buttonsDisabled}>Add Clip</button>
+                    <TimeLine 
+                        timelineWidth={window.innerWidth * 0.9}
+                        isPlaying={isPlaying}
+                        currentSub={currentSub}
+                        currentPosition={currentPosition}
+                        currentSliderPosition={currentSliderPosition}
+                        videoLength={videoLength}
+                        subs={subs}
+                        onStateChange={setIsPlaying}
+                        onSubSelect={setCurrentSub}
+                        onSubsChange={subChangeHandler}
+                        onSliderPositionChange={scrub}
+                    />
                 </div>
                 :
                 <div>

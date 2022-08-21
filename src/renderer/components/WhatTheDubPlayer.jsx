@@ -116,12 +116,11 @@ export default (props) => {
     }
 
     return (
-        <div>
+        <div className="video-window">
             { props.videoSource ?
                 <video 
                     id="videoElement" 
-                    ref={videoElement} 
-                    style={{width: "500px"}}
+                    ref={videoElement}
                     src={props.videoSource}
                     muted={muted}
                     onPlay={() => {startListener()}}

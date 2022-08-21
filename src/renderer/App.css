@@ -60,3 +60,34 @@ li {
   color: white;
   font-size: 12pt;
 }
+
+.editor-container {
+  display: flex;
+  width: 90%;
+  height: 100vh;
+  margin: auto;
+  flex-direction: column;
+}
+
+.top-pane {
+  display: flex;
+  flex-direction: row;
+  height: 600px;
+}
+
+.video-window video {
+  height: 100%;
+}
+
+.subtitle-window {
+ flex-grow: 1;
+}
+
+.timeline {
+  flex-grow: 1;
+}
+
+.selected {
+  background-color: blue;
+  color: white;
+}
