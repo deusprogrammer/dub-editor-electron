@@ -99,7 +99,7 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
                                 onSliderPositionChange(dragStartTime + timeDelta);
                             }}
                         >
-                            {timelineRow.map((sub, index) => {
+                            {timelineRow.map((sub) => {
                                 return (<>
                                     <div
                                         className="resize-left"

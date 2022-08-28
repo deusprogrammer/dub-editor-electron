@@ -19,7 +19,7 @@ export default ({subs, currentSub, currentSliderPosition, game, onSubsChange, on
                 {subs.map((sub, index) => {
                     return (
                         <div className={index === currentSub ? 'selected' : null }>
-                            {convertMillisecondsToTimestamp(sub.startTime)} - {convertMillisecondsToTimestamp(sub.endTime)}
+                            [{sub.index}] : {convertMillisecondsToTimestamp(sub.startTime)} - {convertMillisecondsToTimestamp(sub.endTime)}
                             <button onClick={() => {onSubsChange("remove", index); onSelectSub(null);}}>Remove</button>
                         </div>
                     )

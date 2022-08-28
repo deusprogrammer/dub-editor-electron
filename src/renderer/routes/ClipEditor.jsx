@@ -136,7 +136,7 @@ let ClipEditor = () => {
         setError(null);
     }
 
-    const subChangeHandler = (mode, sub, index) => {
+    const subChangeHandler = (mode, sub) => {
         if (mode === "add") {
             let subList = [...subs, sub].map((modifiedSub, index) => {
                 return {
@@ -147,11 +147,23 @@ let ClipEditor = () => {
             setSubs(subList);
         } else if (mode === "edit") {
             let subList = [...subs];
-            subList[index] = sub;
+            subList[sub.index] = sub;
+            subList = subList.map((modifiedSub, index) => {
+                return {
+                    ...modifiedSub,
+                    index
+                }
+            });
             setSubs(subList);
         } else if (mode === "remove") {
             let subList = [...subs];
-            subList.splice(index, 1);
+            subList.splice(sub.index, 1);
+            subList = subList.map((modifiedSub, index) => {
+                return {
+                    ...modifiedSub,
+                    index
+                }
+            });
             setSubs(subList);
         }
     }
