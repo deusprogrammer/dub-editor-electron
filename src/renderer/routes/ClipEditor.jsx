@@ -93,6 +93,11 @@ let ClipEditor = () => {
     }
 
     let scrub = (seconds) => {
+        if (seconds < 0) {
+            seconds = 0;
+        } else if (seconds > videoLength * 1000) {
+            seconds = videoLength * 1000;
+        }
         setCurrentPosition(seconds/1000);
         setCurrentSliderPosition(seconds);
         setIsPlaying(false);
@@ -146,6 +151,15 @@ let ClipEditor = () => {
             });
             setSubs(subList);
         } else if (mode === "edit") {
+            let subLength = sub.endTime - sub.startTime;
+            if (sub.startTime < 0) {
+                sub.startTime = 0;
+                sub.endTime = sub.startTime + subLength;
+            } 
+            if (sub.endTime > videoLength * 1000) {
+                sub.endTime = videoLength * 1000;
+                sub.startTime = sub.endTime - subLength;
+            }
             let subList = [...subs];
             subList[sub.index] = sub;
             subList = subList.map((modifiedSub, index) => {
