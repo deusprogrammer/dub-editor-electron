@@ -138,8 +138,13 @@ let ClipEditor = () => {
 
     const subChangeHandler = (mode, sub, index) => {
         if (mode === "add") {
-            sub.index = subs.length;
-            setSubs([...subs, sub]);
+            let subList = [...subs, sub].map((modifiedSub, index) => {
+                return {
+                    ...modifiedSub,
+                    index
+                }
+            });
+            setSubs(subList);
         } else if (mode === "edit") {
             let subList = [...subs];
             subList[index] = sub;

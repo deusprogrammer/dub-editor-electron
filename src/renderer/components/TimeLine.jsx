@@ -85,8 +85,6 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
                         <div 
                             style={{position: "relative", borderBottom: "1px solid black", height: "25px", width: timelineWidth}}
                             onDragOver={(event) => {
-                                // console.log("DRAG SUB " + dragSub);
-                                console.log("ROW: " + rowIndex);
                                 if (isResizing || dragSub === null) {
                                     return;
                                 }
@@ -158,7 +156,6 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
                                         onDrag={(event) => {
                                             let dragDelta = event.clientX - dragStart;
                                             let timeDelta = (dragDelta/timelineWidth) * videoLengthMs;
-                                            console.log("ROW DRAG: " + sub.index);
                                             onSubsChange("edit", {
                                                 ...sub,
                                                 startTime: dragStartTime + timeDelta,
@@ -171,7 +168,6 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
 
                                             let dragDelta = event.clientX - dragStart;
                                             let timeDelta = (dragDelta/timelineWidth) * videoLengthMs;
-                                            console.log("ROW DRAG END: " + sub.index);
                                             onSubsChange("edit", {
                                                 ...sub,
                                                 startTime: dragStartTime + timeDelta,
