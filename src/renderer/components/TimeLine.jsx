@@ -14,6 +14,8 @@ let convertMillisecondsToTimestamp = (milliseconds) => {
 let dragStart = null;
 let dragStartTime = null;
 let dragEndTime = null;
+let dragSub = null;
+let isResizing = false;
 
 export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, videoLength, subs, onSliderPositionChange, onSubsChange, onStateChange, onSubSelect}) => {
     let videoLengthMs = videoLength * 1000;
@@ -28,13 +30,27 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
         onSubsChange(
             "add", 
             {
+                rowIndex: 0,
                 startTime: parseInt(currentSliderPosition), 
                 endTime: parseInt(currentSliderPosition) + 1000, 
-                text: ""
+                text: "",
+                type: "subtitle",
+                voice: "male"
             }, 
             null
         );
     }
+
+    const timelineRows = [];
+    for (let i = 0; i < 5; i++) {
+        timelineRows.push([]);
+    }
+    subs.forEach((sub) => {
+        if (sub.rowIndex >= 5) {
+            return;
+        }
+        timelineRows[sub.rowIndex].push(sub);
+    });
     
     return (
         <div className="timeline">
@@ -55,129 +71,162 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
                 max={videoLengthMs}
                 onChange={(e) => {onSliderPositionChange(e.target.value)}} />
             <div style={{width: `${timelineWidth}px`, height: "100%", position: "relative"}}>
-                <div style={{position: "absolute", left: `${currentSliderPosition/videoLengthMs * timelineWidth}px`, width: "2px", height: "100%", backgroundColor: "black", zIndex: 9999}} />
-                {subs.map((sub, index) => {
+                <div 
+                    style={{
+                        position: "absolute", 
+                        left: `${currentSliderPosition/videoLengthMs * timelineWidth}px`, 
+                        width: "2px", 
+                        height: "100%", 
+                        backgroundColor: "black", 
+                        zIndex: 10001
+                    }} />
+                {timelineRows.map((timelineRow, rowIndex) => {
                     return (
-                        <>
-                            <div
-                                onDragStart={(event) => {
-                                    const img = new Image();
-                                    img.src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAFhAJ/wlseKgAAAABJRU5ErkJggg==";
-                                    event.dataTransfer.setDragImage(img, 10, 10);
-                                    dragStart = event.clientX;
-                                    dragStartTime = sub.startTime;
-                                }}
-                                onDrag={(event) => {
-                                    let dragDelta = event.clientX - dragStart;
-                                    let timeDelta = (dragDelta/timelineWidth) * videoLengthMs;
-                                    onSubsChange("edit", {
-                                        text: sub.text,
-                                        startTime: dragStartTime + timeDelta,
-                                        endTime: sub.endTime
-                                    }, index);
-                                    onSliderPositionChange(dragStartTime + timeDelta);
-                                }}
-                                onDragEnd={(event) => {
-                                    let dragDelta = event.clientX - dragStart;
-                                    let timeDelta = (dragDelta/timelineWidth) * videoLengthMs;
-                                    onSubsChange("edit", {
-                                        text: sub.text,
-                                        startTime: dragStartTime + timeDelta,
-                                        endTime: sub.endTime
-                                    }, index);
-                                    onSliderPositionChange(dragStartTime + timeDelta);
-                                }}
-                                style={{
-                                    position: "absolute",
-                                    left: `${(timelineWidth * (sub.startTime/videoLengthMs)) - 10}px`,
-                                    width: "10px",
-                                    height: "20px",
-                                    cursor: "w-resize"
-                                }}
-                            >
-                            </div>
-                            <div 
-                                onClick={() => {
-                                    onSubSelect(index);
-                                }}
-                                onDragStart={(event) => {
-                                    const img = new Image();
-                                    img.src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAFhAJ/wlseKgAAAABJRU5ErkJggg==";
-                                    event.dataTransfer.setDragImage(img, 10, 10);
-                                    dragStart = event.clientX;
-                                    dragStartTime = sub.startTime;
-                                    dragEndTime = sub.endTime;
-                                }}
-                                onDrag={(event) => {
-                                    let dragDelta = event.clientX - dragStart;
-                                    let timeDelta = (dragDelta/timelineWidth) * videoLengthMs;
-                                    onSubsChange("edit", {
-                                        text: sub.text,
-                                        startTime: dragStartTime + timeDelta,
-                                        endTime: dragEndTime + timeDelta
-                                    }, index);
-                                    onSliderPositionChange(dragStartTime + timeDelta);
-                                }}
-                                onDragEnd={(event) => {
-                                    let dragDelta = event.clientX - dragStart;
-                                    let timeDelta = (dragDelta/timelineWidth) * videoLengthMs;
-                                    onSubsChange("edit", {
-                                        text: sub.text,
-                                        startTime: dragStartTime + timeDelta,
-                                        endTime: dragEndTime + timeDelta
-                                    }, index);
-                                    onSliderPositionChange(dragStartTime + timeDelta);
-                                }}
-                                draggable
-                                style={{
-                                    position: "absolute",
-                                    left: `${(timelineWidth * (sub.startTime/videoLengthMs))}px`,
-                                    width: `${(timelineWidth * ((sub.endTime - sub.startTime)/videoLengthMs))}px`,
-                                    height: "20px",
-                                    backgroundColor: `${index === currentSub ? 'blue' : 'yellow'}`,
-                                    border: "1px solid black",
-                                    cursor: "move"
-                                }}
-                            >
-                                {sub.text}
-                            </div>
-                            <div
-                                onDragStart={(event) => {
-                                    const img = new Image();
-                                    img.src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAFhAJ/wlseKgAAAABJRU5ErkJggg==";
-                                    event.dataTransfer.setDragImage(img, 10, 10);
-                                    dragStart = event.clientX;
-                                    dragEndTime = sub.endTime;
-                                }}
-                                onDrag={(event) => {
-                                    let dragDelta = event.clientX - dragStart;
-                                    let timeDelta = (dragDelta/timelineWidth) * videoLengthMs;
-                                    onSubsChange("edit", {
-                                        text: sub.text,
-                                        startTime: sub.startTime,
-                                        endTime: dragEndTime + timeDelta
-                                    }, index);
-                                }}
-                                onDragEnd={(event) => {
-                                    let dragDelta = event.clientX - dragStart;
-                                    let timeDelta = (dragDelta/timelineWidth) * videoLengthMs;
-                                    onSubsChange("edit", {
-                                        text: sub.text,
-                                        startTime: sub.startTime,
-                                        endTime: dragEndTime + timeDelta
-                                    }, index);
-                                }}
-                                draggable
-                                style={{
-                                    position: "absolute",
-                                    left: `${(timelineWidth * (sub.endTime/videoLengthMs))}px`,
-                                    width: "10px",
-                                    height: "20px",
-                                    cursor: "e-resize"
-                                }}
-                            >
-                            </div>
-                        </>
+                        <div 
+                            style={{position: "relative", borderBottom: "1px solid black", height: "25px", width: timelineWidth}}
+                            onDragOver={(event) => {
+                                // console.log("DRAG SUB " + dragSub);
+                                console.log("ROW: " + rowIndex);
+                                if (isResizing || dragSub === null) {
+                                    return;
+                                }
+                                let dragDelta = event.clientX - dragStart;
+                                let timeDelta = (dragDelta/timelineWidth) * videoLengthMs;
+                                onSubsChange("edit", {
+                                    ...subs[dragSub],
+                                    rowIndex,
+                                    startTime: dragStartTime + timeDelta,
+                                    endTime: dragEndTime + timeDelta
+                                }, dragSub);
+                                onSliderPositionChange(dragStartTime + timeDelta);
+                            }}
+                        >
+                            {timelineRow.map((sub, index) => {
+                                return (<>
+                                    <div
+                                        className="resize-left"
+                                        onDragStart={(event) => {
+                                            isResizing = true;
+
+                                            const img = new Image();
+                                            img.src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAFhAJ/wlseKgAAAABJRU5ErkJggg==";
+                                            event.dataTransfer.setDragImage(img, 10, 10);
+                                            dragStart = event.clientX;
+                                            dragStartTime = sub.startTime;
+                                        }}
+                                        onDrag={(event) => {
+                                            let dragDelta = event.clientX - dragStart;
+                                            let timeDelta = (dragDelta/timelineWidth) * videoLengthMs;
+                                            onSubsChange("edit", {
+                                                ...sub,
+                                                startTime: dragStartTime + timeDelta
+                                            }, sub.index);
+                                            onSliderPositionChange(dragStartTime + timeDelta);
+                                        }}
+                                        onDragEnd={(event) => {
+                                            isResizing = false;
+
+                                            let dragDelta = event.clientX - dragStart;
+                                            let timeDelta = (dragDelta/timelineWidth) * videoLengthMs;
+                                            onSubsChange("edit", {
+                                                ...sub,
+                                                startTime: dragStartTime + timeDelta
+                                            }, sub.index);
+                                            onSliderPositionChange(dragStartTime + timeDelta);
+                                        }}
+                                        draggable
+                                        style={{
+                                            left: `${(timelineWidth * (sub.startTime/videoLengthMs))}px`
+                                        }}
+                                    >
+                                    </div>
+                                    <div 
+                                        className={`${sub.index === currentSub ? 'subtitle selected' : 'subtitle'}`}
+                                        onClick={() => {
+                                            onSubSelect(sub.index);
+                                        }}
+                                        onDragStart={(event) => {
+                                            dragSub = sub.index;
+
+                                            const img = new Image();
+                                            img.src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAFhAJ/wlseKgAAAABJRU5ErkJggg==";
+                                            event.dataTransfer.setDragImage(img, 10, 10);
+                                            dragStart = event.clientX;
+                                            dragStartTime = sub.startTime;
+                                            dragEndTime = sub.endTime;
+                                        }}
+                                        onDrag={(event) => {
+                                            let dragDelta = event.clientX - dragStart;
+                                            let timeDelta = (dragDelta/timelineWidth) * videoLengthMs;
+                                            console.log("ROW DRAG: " + sub.index);
+                                            onSubsChange("edit", {
+                                                ...sub,
+                                                startTime: dragStartTime + timeDelta,
+                                                endTime: dragEndTime + timeDelta
+                                            }, sub.index);
+                                            onSliderPositionChange(dragStartTime + timeDelta);
+                                        }}
+                                        onDragEnd={(event) => {
+                                            dragSub = null;
+
+                                            let dragDelta = event.clientX - dragStart;
+                                            let timeDelta = (dragDelta/timelineWidth) * videoLengthMs;
+                                            console.log("ROW DRAG END: " + sub.index);
+                                            onSubsChange("edit", {
+                                                ...sub,
+                                                startTime: dragStartTime + timeDelta,
+                                                endTime: dragEndTime + timeDelta
+                                            }, sub.index);
+                                            onSliderPositionChange(dragStartTime + timeDelta);
+                                        }}
+                                        draggable
+                                        style={{
+                                            left: `${(timelineWidth * (sub.startTime/videoLengthMs))}px`,
+                                            width: `${(timelineWidth * ((sub.endTime - sub.startTime)/videoLengthMs))}px`
+                                        }}
+                                    >
+                                        {sub.type === "dynamic" ? "[DYN]" : sub.text}
+                                    </div>
+                                    <div
+                                        className="resize-right"
+                                        onDragStart={(event) => {
+                                            isResizing = true;
+
+                                            const img = new Image();
+                                            img.src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAFhAJ/wlseKgAAAABJRU5ErkJggg==";
+                                            event.dataTransfer.setDragImage(img, 10, 10);
+                                            dragStart = event.clientX;
+                                            dragEndTime = sub.endTime;
+                                        }}
+                                        onDrag={(event) => {
+                                            let dragDelta = event.clientX - dragStart;
+                                            let timeDelta = (dragDelta/timelineWidth) * videoLengthMs;
+                                            onSubsChange("edit", {
+                                                ...sub,
+                                                endTime: dragEndTime + timeDelta
+                                            }, sub.index);
+                                            onSliderPositionChange(dragEndTime + timeDelta);
+                                        }}
+                                        onDragEnd={(event) => {
+                                            isResizing = false;
+
+                                            let dragDelta = event.clientX - dragStart;
+                                            let timeDelta = (dragDelta/timelineWidth) * videoLengthMs;
+                                            onSubsChange("edit", {
+                                                ...sub,
+                                                endTime: dragEndTime + timeDelta
+                                            }, sub.index);
+                                            onSliderPositionChange(dragEndTime + timeDelta);
+                                        }}
+                                        draggable
+                                        style={{
+                                            left: `${(timelineWidth * (sub.endTime/videoLengthMs)) - 10}px`
+                                        }}
+                                    >
+                                    </div>
+                                </>)
+                            })}
+                        </div>
                     )
                 })}
             </div>

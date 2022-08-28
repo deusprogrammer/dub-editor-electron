@@ -31,10 +31,8 @@ let ClipEditor = () => {
     let game;
 
     if (params.type === "rifftrax") {
-        placeholder = "Text or [Insert Riff Here]";
         game = "RiffTrax";
     } else if (params.type === "whatthedub") {
-        placeholder = "Text, [male_dub], or [female_dub]";
         game = "What the Dub";
     }
 
@@ -140,18 +138,17 @@ let ClipEditor = () => {
 
     const subChangeHandler = (mode, sub, index) => {
         if (mode === "add") {
+            sub.index = subs.length;
             setSubs([...subs, sub]);
         } else if (mode === "edit") {
             let subList = [...subs];
             subList[index] = sub;
             setSubs(subList);
+        } else if (mode === "remove") {
+            let subList = [...subs];
+            subList.splice(index, 1);
+            setSubs(subList);
         }
-    }
-
-    const removeSub = (index) => {
-        let subList = [...subs];
-        subList.splice(index, 1);
-        setSubs(subList);
     }
 
     return (
@@ -173,14 +170,16 @@ let ClipEditor = () => {
                                 setCurrentSub(index);
                             }}
                             onVideoPositionChange={(position) => {
-                                setCurrentSliderPosition(position);
+                                setCurrentSliderPosition(position * 1000);
                             }}
                             onVideoLoaded={(video) => {
                                 setVideoLength(video.duration);
                             }} />
                         <SubtitleList
-                            onRemoveSub={removeSub}
+                            game={params.type}
+                            onSubsChange={subChangeHandler}
                             onSelectSub={setCurrentSub}
+                            currentSliderPosition={currentSliderPosition}
                             currentSub={currentSub}
                             subs={subs} />
                     </div>

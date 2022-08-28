@@ -34,9 +34,15 @@ export let convertSecondsToAltTimestamp = (seconds) => {
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}.${ms.toString().padStart(3, "0")}`;
 }
 
-export let convertSubtitlesToSrt = (subtitles) => {
+export let convertSubtitlesToSrt = (subtitles, game) => {
     return subtitles.map((subtitle, index) => {
-        return `${index + 1}\n${convertSecondsToTimestamp(subtitle.startTime)} --> ${convertSecondsToTimestamp(subtitle.endTime)}\n${subtitle.text}`;
+        let text = subtitle.text;
+        if (subtitle.type === "dynamic" && game === "rifftrax") {
+            text = "[Insert Riff Here]";
+        } else if (subtitle.type === "dynamic" && game === "whatthedub") {
+            text = subtitle.voice === "male" ? "[male_dub]" : "[female:dub]"
+        }
+        return `${index + 1}\n${convertSecondsToTimestamp(subtitle.startTime/1000)} --> ${convertSecondsToTimestamp(subtitle.endTime/1000)}\n${text}`;
     }).join("\n\n");
 }
 
@@ -59,14 +65,11 @@ export let convertSrtToSubtitles = (srtBase64) => {
 
                 let startTime = match[1];
                 let endTime = match[2];
-                console.log("START: " + startTime);
-                console.log("END:   " + endTime);
-                subtitle.startTime = convertTimestampToSeconds(startTime);
-                subtitle.endTime = convertTimestampToSeconds(endTime);
+                subtitle.startTime = convertTimestampToSeconds(startTime/1000);
+                subtitle.endTime = convertTimestampToSeconds(endTime/1000);
                 break;
             case 2:
                 subtitle.text = line;
-                console.log("TEXT: " + line);
                 break;
             case 3:
                 if (line !== "") {
@@ -80,8 +83,6 @@ export let convertSrtToSubtitles = (srtBase64) => {
         }
     });
 
-    console.log("SUBTITLES: " + JSON.stringify(subtitles, null, 5));
-
     return subtitles;
 }
 
@@ -89,13 +90,15 @@ export let convertSubtitlesToWebVtt = (subtitles, substitution) => {
     if (!substitution || substitution === "") {
         substitution = "[Missing Audio]";
     }
-    return "WEBVTT\n\n" + subtitles.map((subtitle) => {
-        if (substitution && (subtitle.text === "[male_dub]" || subtitle.text === "[female_dub]" || subtitle.text === "[Insert Riff Here]")) {
-            return `${convertSecondsToAltTimestamp(subtitle.startTime)} --> ${convertSecondsToAltTimestamp(subtitle.endTime)}\n${substitution}`;
+    let webvtt = "WEBVTT\n\n" + subtitles.map((subtitle) => {
+        if (substitution && subtitle.type === "dynamic") {
+            return `${convertSecondsToAltTimestamp(subtitle.startTime/1000)} --> ${convertSecondsToAltTimestamp(subtitle.endTime/1000)}\n${substitution}`;
         } else {
-            return `${convertSecondsToAltTimestamp(subtitle.startTime)} --> ${convertSecondsToAltTimestamp(subtitle.endTime)}\n${subtitle.text}`;
+            return `${convertSecondsToAltTimestamp(subtitle.startTime/1000)} --> ${convertSecondsToAltTimestamp(subtitle.endTime/1000)}\n${subtitle.text}`;
         }
     }).join("\n\n");
+
+    return webvtt;
 }
 
 export let createWebVttDataUri = (subtitles, substitution) => {
@@ -103,5 +106,5 @@ export let createWebVttDataUri = (subtitles, substitution) => {
 }
 
 export let addVideo = async (base64ByteStream, subtitles, title, clipNumber = 1, type) => {
-    await window.api.send("storeVideo", {base64ByteStream, subtitles: convertSubtitlesToSrt(subtitles), title, clipNumber, game: type});
+    await window.api.send("storeVideo", {base64ByteStream, subtitles: convertSubtitlesToSrt(subtitles, type), title, clipNumber, game: type});
 }

@@ -48,7 +48,7 @@ export default (props) => {
 
         setIsTalking(true);
 
-        if (subtitle.text === "[male_dub]") {
+        if (subtitle.voice === "male") {
             voice = maleVoice;
         } else {
             voice = femaleVoice;
@@ -72,7 +72,7 @@ export default (props) => {
     let updateSubtitle = (video) => {
         props.onVideoPositionChange(video.currentTime);
         let index = props.subs.findIndex((subtitle) => {
-            return video.currentTime > subtitle.startTime && video.currentTime < subtitle.endTime;
+            return video.currentTime > subtitle.startTime/1000 && video.currentTime < subtitle.endTime/1000;
         });
 
         if (index !== currentIndex) {
@@ -84,14 +84,14 @@ export default (props) => {
 
             if (currentIndex >= 0) {
                 let currentSubtitle = props.subs[currentIndex];
-                if (currentSubtitle.text === "[male_dub]" || currentSubtitle.text === "[female_dub]") {
+                if (currentSubtitle.type === "dynamic") {
                     setMuted(false);
                 }
             }
 
             if (index >= 0) {
                 let subtitle = props.subs[index];
-                if (subtitle.text === "[male_dub]" || subtitle.text === "[female_dub]") {
+                if (subtitle.type === "dynamic") {
                     setMuted(true);
                     if (props.substitution) {
                         speak(subtitle, props.substitution);

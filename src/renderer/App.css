@@ -88,6 +88,43 @@ li {
 }
 
 .selected {
-  background-color: blue;
+  background-color: blue !important;
+  color: white !important;
+}
+
+.subtitle, .resize-left, .resize-right {
+  position: absolute;
+  height: 20px;
+}
+
+.resize-left, .resize-right {
+  width: 5px;
+  z-index: 10000;
+} 
+
+.subtitle {
+  cursor: grab;
+  height: 100%;
+  z-index: 9999;
+  border: 1px solid black;
+  overflow: hidden;
+  background-color: gray;
   color: white;
+}
+
+.subtitle:active {
+  cursor: grabbing;
+}
+
+.resize-left, .resize-left:active {
+  cursor: w-resize;
+}
+
+.resize-right, .resize-right:active {
+  cursor: e-resize;
+}
+
+.subtitle-list {
+  max-height: 200px;
+  overflow-y: scroll;
 }
