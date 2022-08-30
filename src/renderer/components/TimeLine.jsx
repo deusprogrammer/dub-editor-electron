@@ -241,7 +241,3 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
         </div>
     )
 }
-
-// pos = timelineWidth * (startTime/videoLength)
-// pos/timelineWidth = startTime/videoLength
-// pos/timelineWidth * videoLength = startTime

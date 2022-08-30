@@ -13,10 +13,8 @@ let ClipEditor = () => {
     const navigate = useNavigate();
 
     const [error, setError] = useState(null);
-    const [clipNumber, setClipNumber] = useState(1);
     const [videoSource, setVideoSource] = useState("");
     const [subs, setSubs] = useState([]);
-    const [videoName, setVideoName] = useState(null);
     const [currentSub, setCurrentSub] = useState(null);
     const [substitution, setSubstitution] = useState("");
     const [buttonsDisabled, setButtonsDisabled] = useState(false);
@@ -34,43 +32,6 @@ let ClipEditor = () => {
         game = "RiffTrax";
     } else if (params.type === "whatthedub") {
         game = "What the Dub";
-    }
-
-    let newSub = (startTime) => {
-        setSubs([...subs, {
-            startTime,
-            endTime: startTime + 2,
-            text: ""
-        }]);
-        setCurrentSub((subs.length - 1) + 1);
-    }
-
-    let setStart = (startTime) => {
-        let prev = [...subs];
-        prev[currentSub] = {
-            startTime,
-            endTime: startTime,
-            text: ""
-        };
-        setSubs(prev);
-    }
-
-    let setEnd = (endTime) => {
-        let prev = [...subs];
-        prev[currentSub] = {
-            ...prev[currentSub],
-            endTime
-        };
-        setSubs(prev);
-    }
-
-    let setText = (text) => {
-        let prev = [...subs];
-        prev[currentSub] = {
-            ...prev[currentSub],
-            text
-        };
-        setSubs(prev);
     }
 
     let onFileOpen = (e) => {
@@ -103,7 +64,14 @@ let ClipEditor = () => {
         setIsPlaying(false);
     }
 
-    let addVideoToGame = async () => {
+    let addVideoToGame = async (videoName, clipNumber) => {
+        if (checkClipExists(videoName, clipNumber)) {
+            setError("Clip with this name and number already exists");
+            return;
+        }
+
+        setError(null);
+
         try {
             setButtonsDisabled(true);
             await addVideo(videoSource.substring(videoSource.indexOf(',') + 1), subs, videoName, clipNumber, params.type);
@@ -117,28 +85,8 @@ let ClipEditor = () => {
         }
     }
 
-    let updateVideoName = async (title) => {
-        setVideoName(title);
-        let result = await window.api.send("clipExists", {title, clipNumber, game: params.type});
-        
-        if (result) {
-            setError("Clip with this name and number already exists");
-            return;
-        }
-
-        setError(null);
-    }
-
-    let updateClipNumber = async (clipNumber) => {
-        setClipNumber(clipNumber);
-        let result = await window.api.send("clipExists", {title: videoName, clipNumber, game: params.type});
-
-        if (result) {
-            setError("Clip with this name and number already exists");
-            return;
-        }
-
-        setError(null);
+    let checkClipExists = async (title, clipNumber) => {
+        return await window.api.send("clipExists", {title, clipNumber, game: params.type});
     }
 
     const subChangeHandler = (mode, sub) => {
@@ -170,6 +118,7 @@ let ClipEditor = () => {
             });
             setSubs(subList);
         } else if (mode === "remove") {
+            console.log("REMOVING INDEX " + sub.index);
             let subList = [...subs];
             subList.splice(sub.index, 1);
             subList = subList.map((modifiedSub, index) => {
@@ -208,11 +157,12 @@ let ClipEditor = () => {
                             }} />
                         <SubtitleList
                             game={params.type}
-                            onSubsChange={subChangeHandler}
-                            onSelectSub={setCurrentSub}
                             currentSliderPosition={currentSliderPosition}
                             currentSub={currentSub}
-                            subs={subs} />
+                            subs={subs}
+                            onSubsChange={subChangeHandler}
+                            onSelectSub={setCurrentSub}
+                            onSave={(title, number) => {addVideoToGame(title, number)}} />
                     </div>
                     <TimeLine 
                         timelineWidth={window.innerWidth * 0.9}
