@@ -14,6 +14,8 @@ export default ({subs, currentSub, currentSliderPosition, game, onSubsChange, on
     let [clipTitle, setClipTitle] = useState("");
     let [clipNumber, setClipNumber] = useState(1);
 
+    console.log("CURRENT SUB: " + currentSub);
+
     let currentSubObject = subs[currentSub];
     return (
         <div className="subtitle-window">

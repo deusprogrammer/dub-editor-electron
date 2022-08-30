@@ -39,7 +39,6 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
                 voice: "male"
             }
         );
-        onSubSelect()
     }
 
     const timelineRows = [];
@@ -52,6 +51,8 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
         }
         timelineRows[sub.rowIndex].push(sub);
     });
+
+    console.log("CURRENT SUB: " + currentSub);
     
     return (
         <div className="timeline">

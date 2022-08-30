@@ -91,12 +91,17 @@ let ClipEditor = () => {
 
     const subChangeHandler = (mode, sub) => {
         if (mode === "add") {
+            let newSubIndex = 0;
             let subList = [...subs, sub].sort((a, b) => a.startTime - b.startTime).map((modifiedSub, index) => {
+                if (!modifiedSub.index) {
+                    newSubIndex = index;
+                }
                 return {
                     ...modifiedSub,
                     index
                 }
             });
+            setCurrentSub(newSubIndex);
             setSubs(subList);
         } else if (mode === "edit") {
             let subLength = sub.endTime - sub.startTime;
@@ -129,6 +134,8 @@ let ClipEditor = () => {
             setSubs(subList);
         }
     }
+
+    console.log("FUCK: " + currentSub);
 
     return (
         <div>
