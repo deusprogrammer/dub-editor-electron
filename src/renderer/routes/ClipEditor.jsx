@@ -118,7 +118,6 @@ let ClipEditor = () => {
             });
             setSubs(subList);
         } else if (mode === "remove") {
-            console.log("REMOVING INDEX " + sub.index);
             let subList = [...subs];
             subList.splice(sub.index, 1);
             subList = subList.map((modifiedSub, index) => {
