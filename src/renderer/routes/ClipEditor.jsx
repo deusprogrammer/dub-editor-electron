@@ -91,7 +91,7 @@ let ClipEditor = () => {
 
     const subChangeHandler = (mode, sub) => {
         if (mode === "add") {
-            let subList = [...subs, sub].map((modifiedSub, index) => {
+            let subList = [...subs, sub].sort((a, b) => a.startTime - b.startTime).map((modifiedSub, index) => {
                 return {
                     ...modifiedSub,
                     index

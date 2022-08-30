@@ -1,5 +1,5 @@
 import AddSubButton from "./AddSubButton";
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 
 let convertMillisecondsToTimestamp = (milliseconds) => {
     let seconds = milliseconds / 1000;
@@ -18,6 +18,7 @@ let dragSub = null;
 let isResizing = false;
 
 export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, videoLength, subs, onSliderPositionChange, onSubsChange, onStateChange, onSubSelect}) => {
+    const [currentRow, setCurrentRow] = useState(0);
     let videoLengthMs = videoLength * 1000;
 
     useEffect(() => {
@@ -30,15 +31,15 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
         onSubsChange(
             "add", 
             {
-                rowIndex: 0,
+                rowIndex: currentRow,
                 startTime: parseInt(currentSliderPosition), 
                 endTime: parseInt(currentSliderPosition) + 1000, 
                 text: "",
                 type: "subtitle",
                 voice: "male"
-            }, 
-            null
+            }
         );
+        onSubSelect()
     }
 
     const timelineRows = [];
@@ -83,7 +84,17 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
                 {timelineRows.map((timelineRow, rowIndex) => {
                     return (
                         <div 
-                            style={{position: "relative", borderBottom: "1px solid black", height: "25px", width: timelineWidth}}
+                            style={{
+                                cursor: "pointer",
+                                position: "relative",
+                                borderTop: rowIndex === 0 ? "1px solid black" : "none",
+                                borderBottom: "1px solid black", 
+                                height: "27px", 
+                                width: timelineWidth, 
+                                backgroundColor: rowIndex === currentRow ? "darkgray" : "white"}}
+                            onClick={() => {
+                                setCurrentRow(rowIndex);
+                            }}
                             onDragOver={(event) => {
                                 if (isResizing || dragSub === null) {
                                     return;
@@ -110,6 +121,7 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
                                     startTime,
                                     endTime
                                 });
+                                setCurrentRow(rowIndex);
                                 onSliderPositionChange(startTime);
                             }}
                         >
@@ -133,11 +145,13 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
                                             let timeDelta = (dragDelta/timelineWidth) * videoLengthMs;
                                             let startTime = Math.max(0, dragStartTime + timeDelta);
 
+                                            setCurrentRow(rowIndex);
                                             onSubsChange("edit", {
                                                 ...sub,
                                                 startTime
                                             });
                                             onSliderPositionChange(startTime);
+                                            onSubSelect(sub.index);
                                         }}
                                         onDragEnd={(event) => {
                                             isResizing = false;
@@ -179,14 +193,14 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
                                                 endTime = videoLengthMs;
                                             }
 
+                                            setCurrentRow(rowIndex);
                                             onSubsChange("edit", {
                                                 ...sub,
                                                 startTime,
                                                 endTime
                                             });
-                                            console.log("START TIME " + startTime);
-                                            console.log("LENGTH :   " + videoLengthMs);
                                             onSliderPositionChange(startTime);
+                                            onSubSelect(sub.index);
                                         }}
                                         onDragEnd={(event) => {
                                             dragSub = null;
@@ -217,11 +231,13 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
                                             let timeDelta = (dragDelta/timelineWidth) * videoLengthMs;
                                             let endTime = Math.min(dragEndTime + timeDelta, videoLengthMs);
 
+                                            setCurrentRow(rowIndex);
                                             onSubsChange("edit", {
                                                 ...sub,
                                                 endTime
                                             });
                                             onSliderPositionChange(endTime);
+                                            onSubSelect(sub.index);
                                         }}
                                         onDragEnd={(event) => {
                                             isResizing = false;

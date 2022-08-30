@@ -42,7 +42,7 @@ export default ({subs, currentSub, currentSliderPosition, game, onSubsChange, on
                     )
                 })}
             </div>
-            {currentSub !== null ? 
+            {currentSubObject ? 
                 <>
                     <h3>Subtitle Editor</h3>
                     <div className="subtitle-editor">
