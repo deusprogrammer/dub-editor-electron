@@ -4,13 +4,17 @@ import { Link } from 'react-router-dom';
 import {toast} from 'react-toastify';
 import {addVideo} from '../util/VideoTools';
 
+import {api} from '../util/Api';
+
 import WhatTheDubPlayer from '../components/WhatTheDubPlayer';
 import TimeLine from '../components/TimeLine';
-import SubtitleList from '../components/SubtitleList'
+import SubtitleList from '../components/SubtitleList';
 
 let ClipEditor = () => {
     const params = useParams();
     const navigate = useNavigate();
+
+    const [windowSize, setWindowSize] = useState({width: window.innerWidth, height: window.innerHeight});
 
     const [error, setError] = useState(null);
     const [videoSource, setVideoSource] = useState("");
@@ -25,13 +29,14 @@ let ClipEditor = () => {
 
     const [videoLength, setVideoLength] = useState(0);
 
-    let placeholder;
-    let game;
-
     if (params.type === "rifftrax") {
         game = "RiffTrax";
     } else if (params.type === "whatthedub") {
         game = "What the Dub";
+    }
+
+    window.onresize = () => {
+        setWindowSize({width: window.innerWidth, height: window.innerHeight})
     }
 
     let onFileOpen = (e) => {
@@ -65,7 +70,7 @@ let ClipEditor = () => {
     }
 
     let addVideoToGame = async (videoName, clipNumber) => {
-        if (checkClipExists(videoName, clipNumber)) {
+        if (await checkClipExists(videoName, clipNumber)) {
             setError("Clip with this name and number already exists");
             return;
         }
@@ -78,7 +83,7 @@ let ClipEditor = () => {
             setButtonsDisabled(false);
 
             toast(`Clip added successfully!`, {type: "info"});
-            navigate("/");
+            navigate('/');
         } catch (error) {
             console.error(error);
             toast(`Clip add failed!`, {type: "error"});
@@ -86,7 +91,7 @@ let ClipEditor = () => {
     }
 
     let checkClipExists = async (title, clipNumber) => {
-        return await window.api.send("clipExists", {title, clipNumber, game: params.type});
+        return await api.send("clipExists", {title, clipNumber, game: params.type});
     }
 
     const subChangeHandler = (mode, sub) => {
@@ -135,8 +140,6 @@ let ClipEditor = () => {
         }
     }
 
-    console.log("FUCK: " + currentSub);
-
     return (
         <div>
             <div style={{color: "red"}}>{error}</div>
@@ -171,7 +174,7 @@ let ClipEditor = () => {
                             onSave={(title, number) => {addVideoToGame(title, number)}} />
                     </div>
                     <TimeLine 
-                        timelineWidth={window.innerWidth * 0.9}
+                        timelineWidth={windowSize.width * 0.9}
                         isPlaying={isPlaying}
                         currentSub={currentSub}
                         currentPosition={currentPosition}

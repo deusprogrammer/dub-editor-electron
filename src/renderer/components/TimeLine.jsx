@@ -209,10 +209,12 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
                                         draggable
                                         style={{
                                             left: `${(timelineWidth * (sub.startTime/videoLengthMs))}px`,
-                                            width: `${(timelineWidth * ((sub.endTime - sub.startTime)/videoLengthMs))}px`
+                                            width: `${(timelineWidth * ((sub.endTime - sub.startTime)/videoLengthMs))}px`,
+                                            textAlign: 'center',
+                                            lineHeight: '25px'
                                         }}
                                     >
-                                        {sub.type === "dynamic" ? "[DYN]" : sub.text}
+                                        {sub.index}
                                     </div>
                                     <div
                                         className="resize-right"
