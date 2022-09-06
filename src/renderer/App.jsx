@@ -48,8 +48,6 @@ let App = (props) => {
         );
     }
 
-    console.log("LOCATION: " + location.pathname);
-
     return (
         <div className="App">
             <ToastContainer />

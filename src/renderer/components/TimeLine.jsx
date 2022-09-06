@@ -156,6 +156,7 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
                                         }}
                                         onDragEnd={(event) => {
                                             isResizing = false;
+                                            onSubsChange("sort");
                                         }}
                                         draggable
                                         style={{
@@ -205,6 +206,7 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
                                         }}
                                         onDragEnd={(event) => {
                                             dragSub = null;
+                                            onSubsChange("sort");
                                         }}
                                         draggable
                                         style={{
@@ -244,6 +246,7 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
                                         }}
                                         onDragEnd={(event) => {
                                             isResizing = false;
+                                            onSubsChange("sort");
                                         }}
                                         draggable
                                         style={{

@@ -137,6 +137,10 @@ let ClipEditor = () => {
                 }
             });
             setSubs(subList);
+        } else if (mode === "sort") {
+            let subList = [...subs];
+            subList.sort((a, b) => a.startTime - b.startTime);
+            setSubs(subList);
         }
     }
 
