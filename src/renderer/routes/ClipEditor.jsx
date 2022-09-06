@@ -139,7 +139,12 @@ let ClipEditor = () => {
             setSubs(subList);
         } else if (mode === "sort") {
             let subList = [...subs];
-            subList.sort((a, b) => a.startTime - b.startTime);
+            subList = subList.sort((a, b) => a.startTime - b.startTime).map((modifiedSub, index) => {
+                return {
+                    ...modifiedSub,
+                    index
+                }
+            });
             setSubs(subList);
         }
     }
