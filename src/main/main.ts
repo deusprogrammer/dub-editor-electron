@@ -48,7 +48,7 @@ const importZip = async (filePath : string, game : string) => {
     } else {
         return;
     }
-    
+
     // Extract video names from zip
     const zip = new StreamZip.async({ file: filePath });
     const entries = await zip.entries();
@@ -96,7 +96,7 @@ const exportToZip = async (filePath : string, collectionId : string, game : stri
 
     const zip : JSZip = new JSZip();
     zip.file(zipFilePath);
-    
+
     let root = zip.folder("StreamingAssets");
     collections[game][collectionId].forEach((videoId : string) => {
         let videoFilePath : string = `${clipsDirectory}/${videoId}.mp4`;
@@ -135,10 +135,10 @@ const addToCollection = (game : string, collectionId : string, videoIdList : Arr
 const toggleAllVideos = (game : string, isActive : boolean, except : Array<String> = []) => {
     let clipsDirectory : string = "";
     let subsDirectory : string = "";
-    if (game === "rifftrax") {
+    if (config.rifftraxDirectory && game === "rifftrax") {
         clipsDirectory = `${config.rifftraxDirectory}/StreamingAssets/VideoClips`.replace("~", HOME);
         subsDirectory = `${config.rifftraxDirectory}/StreamingAssets/Subtitles`.replace("~", HOME);
-    } else if (game === "whatthedub") {
+    } else if (config.whatTheDubDirectory && game === "whatthedub") {
         clipsDirectory = `${config.whatTheDubDirectory}/StreamingAssets/VideoClips`.replace("~", HOME);
         subsDirectory = `${config.rifftraxDirectory}/StreamingAssets/Subtitles`.replace("~", HOME);
     } else {
@@ -345,9 +345,9 @@ ipcMain.handle('getConfig', () => {
 
 ipcMain.handle('getVideos', (event, game) => {
     let clipsDirectory = null;
-    if (game === "rifftrax") {
+    if (config.rifftraxDirectory && game === "rifftrax") {
         clipsDirectory = `${config.rifftraxDirectory}/StreamingAssets/VideoClips`.replace("~", HOME);
-    } else if (game === "whatthedub") {
+    } else if (config.whatTheDubDirectory && game === "whatthedub") {
         clipsDirectory = `${config.whatTheDubDirectory}/StreamingAssets/VideoClips`.replace("~", HOME);
     } else {
         return [];
@@ -369,7 +369,7 @@ ipcMain.handle('getVideo', (event, {id, game}) => {
     } else {
         return [];
     }
-    
+
     const clipsDirectory : string = `${directory}/StreamingAssets/VideoClips`.replace("~", HOME);
     const subsDirectory : string = `${directory}/StreamingAssets/Subtitles`.replace("~", HOME);
     const videoFilePath : string = `${clipsDirectory}/${id}.mp4`;
@@ -382,7 +382,7 @@ ipcMain.handle('getVideo', (event, {id, game}) => {
         name: id.replace(/_/g, " "),
         videoUrl: `data:video/mp4;base64,${videoBase64}`,
         subtitles: [],
-        srtBase64: subtitles 
+        srtBase64: subtitles
     }
 });
 
@@ -531,7 +531,7 @@ ipcMain.handle('exportCollection', async (event, {collectionId, game}) => {
     if (response.canceled) {
         return null;
     }
-    
+
     exportToZip(response.filePaths[0], collectionId, game);
 });
 
