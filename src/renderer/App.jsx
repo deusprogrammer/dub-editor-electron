@@ -13,7 +13,7 @@ import About from './routes/About';
 
 import 'react-toastify/dist/ReactToastify.css';
 
-const VERSION = "v1.1b";
+const VERSION = "v1.2.0 Preview";
 
 let App = (props) => {
     const navigate = useNavigate();

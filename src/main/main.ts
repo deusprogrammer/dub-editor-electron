@@ -253,13 +253,15 @@ const createWindow = async () => {
 
     mainWindow.on('ready-to-show', () => {
         if (!mainWindow) {
-        throw new Error('"mainWindow" is not defined');
+          throw new Error('"mainWindow" is not defined');
         }
         if (process.env.START_MINIMIZED) {
-        mainWindow.minimize();
+          mainWindow.minimize();
         } else {
-        mainWindow.show();
+          mainWindow.show();
         }
+
+        // mainWindow.webContents.openDevTools();
     });
 
     mainWindow.on('closed', () => {

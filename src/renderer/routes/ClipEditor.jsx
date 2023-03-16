@@ -29,6 +29,7 @@ let ClipEditor = () => {
 
     const [videoLength, setVideoLength] = useState(0);
 
+    let game = "";
     if (params.type === "rifftrax") {
         game = "RiffTrax";
     } else if (params.type === "whatthedub") {
@@ -54,7 +55,7 @@ let ClipEditor = () => {
         let m = Math.floor((seconds % 3600) / 60);
         let s = Math.floor(seconds % 60);
         let ms = Math.floor((seconds - Math.trunc(seconds)) * 1000);
-    
+
         return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")},${ms.toString().padStart(3, "0")}`;
     }
 
@@ -113,7 +114,7 @@ let ClipEditor = () => {
             if (sub.startTime < 0) {
                 sub.startTime = 0;
                 sub.endTime = sub.startTime + subLength;
-            } 
+            }
             if (sub.endTime > videoLength * 1000) {
                 sub.endTime = videoLength * 1000;
                 sub.startTime = sub.endTime - subLength;
@@ -182,7 +183,7 @@ let ClipEditor = () => {
                             onSelectSub={setCurrentSub}
                             onSave={(title, number) => {addVideoToGame(title, number)}} />
                     </div>
-                    <TimeLine 
+                    <TimeLine
                         timelineWidth={windowSize.width * 0.9}
                         isPlaying={isPlaying}
                         currentSub={currentSub}
