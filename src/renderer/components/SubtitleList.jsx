@@ -1,4 +1,5 @@
 import {useEffect, useState} from 'react';
+import { Link } from 'react-router-dom';
 
 let convertMillisecondsToTimestamp = (milliseconds) => {
     let seconds = milliseconds / 1000;
@@ -31,7 +32,8 @@ export default ({subs, currentSub, currentSliderPosition, game, onSubsChange, on
                         <td><input type="number" value={clipNumber} onChange={({target: {value}}) => {setClipNumber(value)}} /></td>
                     </tr>
                 </table>
-                <button onClick={() => {onSave(clipTitle, clipNumber)}}>Finalize Clip</button>
+                <button onClick={() => {onSave(clipTitle, clipNumber)}}>Finalize Clip</button><br/>
+                <Link to="/"><button>Close Editor</button></Link>
             </div>
             <h3>Subtitles</h3>
             <div className="subtitle-list">
@@ -44,7 +46,7 @@ export default ({subs, currentSub, currentSliderPosition, game, onSubsChange, on
                     )
                 })}
             </div>
-            {currentSubObject ? 
+            {currentSubObject ?
                 <>
                     <h3>Subtitle Editor</h3>
                     <div className="subtitle-editor">
@@ -80,8 +82,8 @@ export default ({subs, currentSub, currentSliderPosition, game, onSubsChange, on
                             <tr>
                                 <td><label>Subtitle Type</label></td>
                                 <td>
-                                    <select 
-                                        value={currentSubObject.type} 
+                                    <select
+                                        value={currentSubObject.type}
                                         onChange={({target: {value: type}}) => {
                                             onSubsChange("edit", {
                                                 ...currentSubObject,
@@ -97,7 +99,7 @@ export default ({subs, currentSub, currentSliderPosition, game, onSubsChange, on
                             {game === "whatthedub" && currentSubObject.type === "dynamic" ? <tr>
                                 <td><label>Voice</label></td>
                                 <td>
-                                    <select 
+                                    <select
                                         value={currentSubObject.voice}
                                         onChange={({target: {value: voice}}) => {
                                             onSubsChange("edit", {
@@ -113,8 +115,8 @@ export default ({subs, currentSub, currentSliderPosition, game, onSubsChange, on
                             </tr> : null}
                             {currentSubObject.type !== "dynamic" ? <tr>
                                 <td><label>Subtitle</label></td>
-                                <td><textarea 
-                                        value={currentSubObject.text} 
+                                <td><textarea
+                                        value={currentSubObject.text}
                                         onChange={({target: {value: text}}) => {
                                             onSubsChange("edit", {
                                                 ...currentSubObject,

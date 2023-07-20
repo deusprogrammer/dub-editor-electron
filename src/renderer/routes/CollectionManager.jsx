@@ -27,8 +27,8 @@ export default () => {
         toast("Created new clip pack!", {type: "info"});
     }
 
-    const deleteCollection = async (collectionId) => {
-        const collectionMap = await window.api.send("deleteCollection", {game, collectionId});
+    const deleteCollection = async (collectionId, deleteFiles = false) => {
+        const collectionMap = await window.api.send("deleteCollection", {game, collectionId, deleteFiles});
         setCollections(collectionMap);
         toast("Deleted clip pack!", {type: "info"});
     }
@@ -57,6 +57,9 @@ export default () => {
     const importZip = async () => {
         toast("Importing clip pack...", {type: "info"});
         const collectionMap = await window.api.send("importZip", game);
+        if (!collectionMap) {
+          return;
+        }
         setCollections(collectionMap);
         toast("Imported new clip pack!", {type: "info"});
     }
@@ -81,7 +84,7 @@ export default () => {
                             return (
                                 <tr key={key}>
                                     <td style={{textAlign: "left"}}><b>{key}</b> ({collections[key].length} videos)</td>
-                                    <td><button onClick={() => {launch(collections[key])}}>Launch</button><button onClick={() => {setSelected(key)}}>Edit</button><button onClick={() => {exportCollection(key)}}>Export</button><button type="button" onClick={() => {deleteCollection(key)}}>Delete</button></td>
+                                    <td><button onClick={() => {launch(collections[key])}}>Launch</button><button onClick={() => {setSelected(key)}}>Edit</button><button onClick={() => {exportCollection(key)}}>Export</button><button type="button" onClick={() => {deleteCollection(key)}}>Delete Collection</button><button type="button" onClick={() => {deleteCollection(key, true)}}>Delete Collection and Files</button></td>
                                 </tr>);
                         })}
                     </tbody>
