@@ -2,6 +2,8 @@
 
 Dub Editor is a tool for creating/managing clips for Rifftrax the Game and What the Dub.
 
+https://www.youtube.com/watch?v=0uadv6v8-VY&ab_channel=TheTrueKingOfSpace
+
 ## How to Test Development
 
 Make sure to run the following to install all of the dependencies.
