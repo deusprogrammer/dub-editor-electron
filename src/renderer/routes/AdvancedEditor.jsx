@@ -201,6 +201,7 @@ let AdvancedEditor = () => {
                 <div>
                     <p>Please choose the video you wish to add subtitles to.  Note that the file needs to already be trimmed to the length you want it.</p>
                     <input type="file" accept=".mp4" onChange={onFileOpen} />
+                    <Link to="/"><button type="button">Cancel</button></Link>
                 </div>
             }
         </div>
