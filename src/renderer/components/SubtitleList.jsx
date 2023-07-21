@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 let convertMillisecondsToTimestamp = (milliseconds) => {
@@ -11,7 +11,7 @@ let convertMillisecondsToTimestamp = (milliseconds) => {
     return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")},${ms.toString().padStart(3, "0")}`;
 }
 
-export default ({subs, currentSub, currentSliderPosition, game, onSubsChange, onSelectSub, onRemoveSub, onSave}) => {
+export default ({ subs, currentSub, currentSliderPosition, game, onSubsChange, onSelectSub, onRemoveSub, onSave }) => {
     let [clipTitle, setClipTitle] = useState("");
     let [clipNumber, setClipNumber] = useState(1);
 
@@ -22,26 +22,26 @@ export default ({subs, currentSub, currentSliderPosition, game, onSubsChange, on
         <div className="subtitle-window">
             <h3>Clip Details</h3>
             <div className="video-editor">
-                <table>
+                <table style={{ margin: "auto" }}>
                     <tr>
                         <td>Clip Name</td>
-                        <td><input type="text" value={clipTitle} onChange={({target: {value}}) => {setClipTitle(value)}} /></td>
+                        <td><input type="text" value={clipTitle} onChange={({ target: { value } }) => { setClipTitle(value) }} /></td>
                     </tr>
                     <tr>
                         <td>Clip Number</td>
-                        <td><input type="number" value={clipNumber} onChange={({target: {value}}) => {setClipNumber(value)}} /></td>
+                        <td><input type="number" value={clipNumber} onChange={({ target: { value } }) => { setClipNumber(value) }} /></td>
                     </tr>
                 </table>
-                <button onClick={() => {onSave(clipTitle, clipNumber)}}>Finalize Clip</button><br/>
-                <Link to="/"><button>Close Editor</button></Link>
+                <button onClick={() => { onSave(clipTitle, clipNumber) }}>Finalize Clip</button><br />
+                <Link to="/"><button>Cancel</button></Link>
             </div>
             <h3>Subtitles</h3>
             <div className="subtitle-list">
                 {subs.map((sub) => {
                     return (
-                        <div className={sub.index === currentSub ? 'selected' : null }>
+                        <div className={sub.index === currentSub ? 'selected' : null}>
                             [{sub.index}] : {convertMillisecondsToTimestamp(sub.startTime)} - {convertMillisecondsToTimestamp(sub.endTime)}
-                            <button onClick={() => {onSubsChange("remove", sub); onSelectSub(null);}}>Remove</button>
+                            <button onClick={() => { onSubsChange("remove", sub); onSelectSub(null); }}>Remove</button>
                         </div>
                     )
                 })}
@@ -50,14 +50,14 @@ export default ({subs, currentSub, currentSliderPosition, game, onSubsChange, on
                 <>
                     <h3>Subtitle Editor</h3>
                     <div className="subtitle-editor">
-                        <table style={{margin: "auto"}}>
+                        <table style={{ margin: "auto" }}>
                             <tr>
                                 <td><label>Start</label></td>
                                 <td>
                                     {convertMillisecondsToTimestamp(currentSubObject.startTime)}
                                 </td>
                                 <td>
-                                <button onClick={() => {
+                                    <button onClick={() => {
                                         onSubsChange("edit", {
                                             ...currentSubObject,
                                             startTime: currentSliderPosition
@@ -84,7 +84,7 @@ export default ({subs, currentSub, currentSliderPosition, game, onSubsChange, on
                                 <td>
                                     <select
                                         value={currentSubObject.type}
-                                        onChange={({target: {value: type}}) => {
+                                        onChange={({ target: { value: type } }) => {
                                             onSubsChange("edit", {
                                                 ...currentSubObject,
                                                 type
@@ -101,7 +101,7 @@ export default ({subs, currentSub, currentSliderPosition, game, onSubsChange, on
                                 <td>
                                     <select
                                         value={currentSubObject.voice}
-                                        onChange={({target: {value: voice}}) => {
+                                        onChange={({ target: { value: voice } }) => {
                                             onSubsChange("edit", {
                                                 ...currentSubObject,
                                                 voice
@@ -116,13 +116,13 @@ export default ({subs, currentSub, currentSliderPosition, game, onSubsChange, on
                             {currentSubObject.type !== "dynamic" ? <tr>
                                 <td><label>Subtitle</label></td>
                                 <td><textarea
-                                        value={currentSubObject.text}
-                                        onChange={({target: {value: text}}) => {
-                                            onSubsChange("edit", {
-                                                ...currentSubObject,
-                                                text
-                                            }, currentSub);
-                                        }} /></td>
+                                    value={currentSubObject.text}
+                                    onChange={({ target: { value: text } }) => {
+                                        onSubsChange("edit", {
+                                            ...currentSubObject,
+                                            text
+                                        }, currentSub);
+                                    }} /></td>
                             </tr> : null}
                         </table>
                     </div>

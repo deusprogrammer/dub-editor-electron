@@ -1,5 +1,5 @@
-import React, {useState, useEffect} from 'react';
-import {createWebVttDataUri} from '../util/VideoTools';
+import React, { useState, useEffect } from 'react';
+import { createWebVttDataUri } from '../util/VideoTools';
 
 let isTalking = false;
 let hasEnded = false;
@@ -8,6 +8,7 @@ let interval;
 
 export default (props) => {
     const [muted, setMuted] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     const videoElement = React.createRef();
 
@@ -53,7 +54,7 @@ export default (props) => {
         } else {
             voice = femaleVoice;
         }
-        
+
         let msg = new SpeechSynthesisUtterance();
         msg.voice = voice;
         msg.text = text;
@@ -70,9 +71,13 @@ export default (props) => {
     }
 
     let updateSubtitle = (video) => {
+        if (!video) {
+            return;
+        }
+
         props.onVideoPositionChange(video.currentTime);
         let index = props.subs.findIndex((subtitle) => {
-            return video.currentTime > subtitle.startTime/1000 && video.currentTime < subtitle.endTime/1000;
+            return video.currentTime > subtitle.startTime / 1000 && video.currentTime < subtitle.endTime / 1000;
         });
 
         if (index !== currentIndex) {
@@ -97,7 +102,7 @@ export default (props) => {
                         speak(subtitle, props.substitution);
                     }
                 }
-                props.onIndexChange(index);        
+                props.onIndexChange(index);
             }
 
             setCurrentIndex(index);
@@ -108,36 +113,69 @@ export default (props) => {
         interval = setInterval(() => {
             let video = document.getElementById("videoElement");
             updateSubtitle(video);
-        }, 1000/60);
+        }, 1000 / 60);
     }
 
     let pauseListener = () => {
         clearInterval(interval);
     }
 
+    if (props.width) {
+        return (
+            <div style={{position: "relative", background: "black", color: "white"}} className="video-window">
+                <div style={{position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)"}}>{loading ? "Loading Video..." : null}</div>
+                {props.videoSource ?
+                    <video
+                        id="videoElement"
+                        ref={videoElement}
+                        src={props.videoSource}
+                        style={{ width: props.width }}
+                        muted={muted}
+                        onPlay={() => { startListener() }}
+                        onPause={() => { pauseListener() }}
+                        onEnded={() => {
+                            if (!isTalking) {
+                                pauseListener();
+                                props.onEnd();
+                            } else {
+                                hasEnded = true;
+                            }
+                        }}
+                        onCanPlay={() => { setLoading(false) }}
+                        controls={props.controls}
+                        onCanPlayThrough={() => { props.onVideoLoaded(videoElement.current) }}>
+                        <track label="English" kind="subtitles" srclang="en" src={createWebVttDataUri(props.subs, props.substitution)} default></track>
+                    </video> : null
+                }
+            </div>
+        )
+    }
+
     return (
-        <div className="video-window">
-            { props.videoSource ?
-                <video 
-                    id="videoElement" 
+        <div style={{position: "relative", background: "black", color: "white"}} className="video-window">
+            <div style={{position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)"}}>{loading ? "Loading Video..." : null}</div>
+            {props.videoSource ?
+                <video
+                    id="videoElement"
                     ref={videoElement}
                     src={props.videoSource}
                     muted={muted}
-                    onPlay={() => {startListener()}}
-                    onPause={() => {pauseListener()}}
+                    onPlay={() => { startListener() }}
+                    onPause={() => { pauseListener() }}
                     onEnded={() => {
                         if (!isTalking) {
-                            pauseListener(); 
+                            pauseListener();
                             props.onEnd();
                         } else {
                             hasEnded = true;
                         }
                     }}
+                    onCanPlay={() => { setLoading(false) }}
                     controls={props.controls}
-                    onCanPlayThrough={() => {props.onVideoLoaded(videoElement.current)}}>
-                        <track label="English" kind="subtitles" srclang="en" src={createWebVttDataUri(props.subs, props.substitution)} default></track>
+                    onCanPlayThrough={() => { props.onVideoLoaded(videoElement.current) }}>
+                    <track label="English" kind="subtitles" srclang="en" src={createWebVttDataUri(props.subs, props.substitution)} default></track>
                 </video> : null
-            }               
+            }
         </div>
     );
 }

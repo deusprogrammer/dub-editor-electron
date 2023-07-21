@@ -3,7 +3,7 @@ import React, {useEffect, useState} from 'react';
 import {Routes, Route, NavLink as Link, Navigate, useNavigate, useLocation} from 'react-router-dom';
 import {ToastContainer} from 'react-toastify';
 
-import ClipEditor from './routes/ClipEditor';
+import AdvancedEditor from './routes/AdvancedEditor';
 import VideoList from './routes/VideoList';
 import VideoView from './routes/VideoView';
 import Launcher from './routes/Launcher';
@@ -12,6 +12,8 @@ import Config from './routes/Config';
 import About from './routes/About';
 
 import 'react-toastify/dist/ReactToastify.css';
+import ClipEditor from './routes/ClipEditor';
+import SimpleEditor from './routes/SimpleEditor';
 
 const VERSION = "v1.2.0 Preview";
 
@@ -70,7 +72,9 @@ let App = (props) => {
                 <Routes>
                     <Route exact path={`/about/:game`} element={<About />} />
                     <Route exact path={`/config/:game`} element={<Config />} />
-                    <Route exact path={`/create/:type`} element={<ClipEditor />} />
+                    <Route exact path={`/create/:type`} element={<ClipEditor game={game} />} />
+                    <Route exact path={`/create/advanced/:type`} element={<AdvancedEditor />} />
+                    <Route exact path={`/create/simple/:type`} element={<SimpleEditor />} />
                     <Route exact path={`/collections/:game`} element={<CollectionManager />} />
                     <Route exact path={`/videos/:game`} element={<VideoList />} />
                     <Route exact path={`/videos/:game/:id`} element={<VideoView />} />
