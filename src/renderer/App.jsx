@@ -15,7 +15,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import ClipEditor from './routes/ClipEditor';
 import SimpleEditor from './routes/SimpleEditor';
 
-const VERSION = "v1.2.0 Preview";
+const VERSION = "v1.2.2-beta";
 
 let App = (props) => {
     const navigate = useNavigate();
