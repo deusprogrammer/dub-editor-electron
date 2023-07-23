@@ -104,7 +104,9 @@ let SimpleEditor = () => {
         try {
             setButtonsDisabled(true);
             let videoId = await addVideo(videoSource.substring(videoSource.indexOf(',') + 1), subs, videoName, clipNumber, params.type);
-            CollectionAPI.addToCollection(selectedCollection, params.type, videoId);
+            if (!selectedCollection.startsWith("_")) {
+                CollectionAPI.addToCollection(selectedCollection, params.type, videoId);
+            }
             setButtonsDisabled(false);
 
             toast(`Clip added successfully!`, { type: "info" });
