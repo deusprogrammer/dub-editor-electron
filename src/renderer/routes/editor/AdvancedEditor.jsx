@@ -1,20 +1,21 @@
-import React, {useState} from 'react';
-import {useParams, useNavigate} from 'react-router';
+import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router';
 import { Link } from 'react-router-dom';
-import {toast} from 'react-toastify';
-import {addVideo} from '../util/VideoTools';
+import { toast } from 'react-toastify';
+import { addVideo } from '../../util/VideoTools';
 
-import {api} from '../util/Api';
+import { api } from '../../util/Api';
 
-import WhatTheDubPlayer from '../components/WhatTheDubPlayer';
-import TimeLine from '../components/TimeLine';
-import SubtitleList from '../components/SubtitleList';
+import WhatTheDubPlayer from '../../components/WhatTheDubPlayer';
+import TimeLine from '../../components/TimeLine';
+import SubtitleList from '../../components/SubtitleList';
+import CollectionAPI from 'api/CollectionAPI';
 
 let AdvancedEditor = () => {
     const params = useParams();
     const navigate = useNavigate();
 
-    const [windowSize, setWindowSize] = useState({width: window.innerWidth, height: window.innerHeight});
+    const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
     const [error, setError] = useState(null);
     const [videoSource, setVideoSource] = useState("");
@@ -37,7 +38,7 @@ let AdvancedEditor = () => {
     }
 
     window.onresize = () => {
-        setWindowSize({width: window.innerWidth, height: window.innerHeight})
+        setWindowSize({ width: window.innerWidth, height: window.innerHeight })
     }
 
     let onFileOpen = (e) => {
@@ -65,12 +66,12 @@ let AdvancedEditor = () => {
         } else if (seconds > videoLength * 1000) {
             seconds = videoLength * 1000;
         }
-        setCurrentPosition(seconds/1000);
+        setCurrentPosition(seconds / 1000);
         setCurrentSliderPosition(seconds);
         setIsPlaying(false);
     }
 
-    let addVideoToGame = async (videoName, clipNumber) => {
+    let addVideoToGame = async (videoName, clipNumber, collectionId) => {
         if (await checkClipExists(videoName, clipNumber)) {
             setError("Clip with this name and number already exists");
             return;
@@ -80,19 +81,22 @@ let AdvancedEditor = () => {
 
         try {
             setButtonsDisabled(true);
-            await addVideo(videoSource.substring(videoSource.indexOf(',') + 1), subs, videoName, clipNumber, params.type);
+            let videoId = await addVideo(videoSource.substring(videoSource.indexOf(',') + 1), subs, videoName, clipNumber, params.type);
+            if (!collectionId.startsWith("_")) {
+                await CollectionAPI.addToCollection(collectionId, params.type, videoId);
+            }
             setButtonsDisabled(false);
 
-            toast(`Clip added successfully!`, {type: "info"});
+            toast(`Clip added successfully!`, { type: "info" });
             navigate('/');
         } catch (error) {
             console.error(error);
-            toast(`Clip add failed!`, {type: "error"});
+            toast(`Clip add failed!`, { type: "error" });
         }
     }
 
     let checkClipExists = async (title, clipNumber) => {
-        return await api.send("clipExists", {title, clipNumber, game: params.type});
+        return await api.send("clipExists", { title, clipNumber, game: params.type });
     }
 
     const subChangeHandler = (mode, sub) => {
@@ -152,8 +156,8 @@ let AdvancedEditor = () => {
 
     return (
         <div>
-            <div style={{color: "red"}}>{error}</div>
-            { videoSource ?
+            <div style={{ color: "red" }}>{error}</div>
+            {videoSource ?
                 <div className="editor-container">
                     <div className="top-pane">
                         <WhatTheDubPlayer
@@ -181,7 +185,7 @@ let AdvancedEditor = () => {
                             subs={subs}
                             onSubsChange={subChangeHandler}
                             onSelectSub={setCurrentSub}
-                            onSave={(title, number) => {addVideoToGame(title, number)}} />
+                            onSave={(title, number, collectionId) => { addVideoToGame(title, number, collectionId) }} />
                     </div>
                     <TimeLine
                         timelineWidth={windowSize.width * 0.9}

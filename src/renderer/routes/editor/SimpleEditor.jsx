@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import WhatTheDubPlayer from '../components/WhatTheDubPlayer';
-import { addVideo } from '../util/VideoTools';
+import WhatTheDubPlayer from '../../components/WhatTheDubPlayer';
+import { addVideo } from '../../util/VideoTools';
 import { useParams, useNavigate } from 'react-router';
 import { Link } from 'react-router-dom';
+import CollectionAPI from 'api/CollectionAPI';
 
 let SimpleEditor = () => {
     const params = useParams();
@@ -17,6 +18,8 @@ let SimpleEditor = () => {
     const [currentSub, setCurrentSub] = useState(null);
     const [substitution, setSubstitution] = useState("");
     const [buttonsDisabled, setButtonsDisabled] = useState(false);
+    const [collections, setCollections] = useState([]);
+    const [selectedCollection, setSelectedCollection] = useState("_none");
 
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentPosition, setCurrentPosition] = useState(0);
@@ -100,7 +103,8 @@ let SimpleEditor = () => {
     let addVideoToGame = async () => {
         try {
             setButtonsDisabled(true);
-            await addVideo(videoSource.substring(videoSource.indexOf(',') + 1), subs, videoName, clipNumber, params.type);
+            let videoId = await addVideo(videoSource.substring(videoSource.indexOf(',') + 1), subs, videoName, clipNumber, params.type);
+            CollectionAPI.addToCollection(selectedCollection, params.type, videoId);
             setButtonsDisabled(false);
 
             toast(`Clip added successfully!`, { type: "info" });
@@ -133,6 +137,15 @@ let SimpleEditor = () => {
         }
 
         setError(null);
+    }
+
+    useEffect(() => {
+        getCollections();
+    }, []);
+
+    const getCollections = async () => {
+        let collections = await CollectionAPI.getCollections(params.type);
+        setCollections(collections);
     }
 
     return (
@@ -208,6 +221,17 @@ let SimpleEditor = () => {
                                     </tr>
                                     <tr>
                                         <td>Clip Number</td><td><input type="number" min={1} max={999} maxLength={3} value={clipNumber} onChange={(e) => { updateClipNumber(Math.min(e.target.value, 999)) }} /></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Collection</td>
+                                        <td>
+                                            <select value={selectedCollection} onChange={({ target: { value } }) => { setSelectedCollection(value) }}>
+                                                <option key="_none">None</option>
+                                                {Object.keys(collections).map((collectionId) => (
+                                                    <option>{collectionId}</option>
+                                                ))}
+                                            </select>
+                                        </td>
                                     </tr>
                                 </table>
                             </div>

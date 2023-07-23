@@ -3,7 +3,7 @@ import React, {useEffect, useState} from 'react';
 import {Routes, Route, NavLink as Link, Navigate, useNavigate, useLocation} from 'react-router-dom';
 import {ToastContainer} from 'react-toastify';
 
-import AdvancedEditor from './routes/AdvancedEditor';
+import AdvancedEditor from './routes/editor/AdvancedEditor';
 import VideoList from './routes/VideoList';
 import VideoView from './routes/VideoView';
 import Launcher from './routes/Launcher';
@@ -12,10 +12,10 @@ import Config from './routes/Config';
 import About from './routes/About';
 
 import 'react-toastify/dist/ReactToastify.css';
-import ClipEditor from './routes/ClipEditor';
-import SimpleEditor from './routes/SimpleEditor';
+import ClipEditor from './routes/editor/ClipEditor';
+import SimpleEditor from './routes/editor/SimpleEditor';
 
-const VERSION = "v1.2.2-beta";
+const VERSION = "v1.2.3-beta";
 
 let App = (props) => {
     const navigate = useNavigate();

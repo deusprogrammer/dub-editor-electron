@@ -1,3 +1,4 @@
+import CollectionAPI from 'api/CollectionAPI';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -12,8 +13,19 @@ let convertMillisecondsToTimestamp = (milliseconds) => {
 }
 
 export default ({ subs, currentSub, currentSliderPosition, game, onSubsChange, onSelectSub, onRemoveSub, onSave }) => {
-    let [clipTitle, setClipTitle] = useState("");
-    let [clipNumber, setClipNumber] = useState(1);
+    const [clipTitle, setClipTitle] = useState("");
+    const [clipNumber, setClipNumber] = useState(1);
+    const [collections, setCollections] = useState([]);
+    const [selectedCollection, setSelectedCollection] = useState("_none");
+
+    useEffect(() => {
+        getCollections();
+    }, []);
+
+    const getCollections = async () => {
+        let collections = await CollectionAPI.getCollections(game);
+        setCollections(collections);
+    }
 
     console.log("CURRENT SUB: " + currentSub);
 
@@ -31,8 +43,19 @@ export default ({ subs, currentSub, currentSliderPosition, game, onSubsChange, o
                         <td>Clip Number</td>
                         <td><input type="number" value={clipNumber} onChange={({ target: { value } }) => { setClipNumber(value) }} /></td>
                     </tr>
+                    <tr>
+                        <td>Collection</td>
+                        <td>
+                            <select value={selectedCollection} onChange={({target: {value}}) => {setSelectedCollection(value)}}>
+                                <option key="_none">None</option>
+                                {Object.keys(collections).map((collectionId) => (
+                                    <option>{collectionId}</option>
+                                ))}
+                            </select>
+                        </td>
+                    </tr>
                 </table>
-                <button onClick={() => { onSave(clipTitle, clipNumber) }}>Finalize Clip</button><br />
+                <button onClick={() => { onSave(clipTitle, clipNumber, selectedCollection) }}>Finalize Clip</button><br />
                 <Link to="/"><button>Cancel</button></Link>
             </div>
             <h3>Subtitles</h3>

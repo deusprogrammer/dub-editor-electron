@@ -1,3 +1,4 @@
+import CollectionAPI from 'api/CollectionAPI';
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router';
 import { toast } from 'react-toastify';
@@ -21,25 +22,25 @@ export default () => {
     }
 
     const createNewCollection = async () => {
-        const collectionMap = await window.api.send("createCollection", {game, collectionId: newCollectionName});
+        const collectionMap = await CollectionAPI.createNewCollection(newCollectionName, game);
         setCollections(collectionMap);
         setNewCollectionName("");
         toast("Created new clip pack!", {type: "info"});
     }
 
     const deleteCollection = async (collectionId, deleteFiles = false) => {
-        const collectionMap = await window.api.send("deleteCollection", {game, collectionId, deleteFiles});
+        const collectionMap = await CollectionAPI.deleteCollection(collectionId, game, deleteFiles);
         setCollections(collectionMap);
         toast("Deleted clip pack!", {type: "info"});
     }
 
     const removeFromCollection = async (collectionId, videoId) => {
-        const collectionMap = await window.api.send("removeFromCollection", {game, collectionId, videoId});
+        const collectionMap = await CollectionAPI.removeFromCollection(collectionId, game, videoId);
         setCollections(collectionMap);
     }
 
     const addToCollection = async (collectionId, videoId) => {
-        const collectionMap = await window.api.send("addToCollection", {game, collectionId, videoId});
+        const collectionMap = await CollectionAPI.addToCollection(collectionId, game, videoId);
         setCollections(collectionMap);
     }
 

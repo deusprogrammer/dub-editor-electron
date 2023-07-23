@@ -110,5 +110,5 @@ export let createWebVttDataUri = (subtitles, substitution) => {
 }
 
 export let addVideo = async (base64ByteStream, subtitles, title, clipNumber = 1, type) => {
-    await window.api.send("storeVideo", {base64ByteStream, subtitles: convertSubtitlesToSrt(subtitles, type), title, clipNumber, game: type});
+    return await window.api.send("storeVideo", {base64ByteStream, subtitles: convertSubtitlesToSrt(subtitles, type), title, clipNumber, game: type});
 }

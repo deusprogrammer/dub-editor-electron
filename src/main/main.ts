@@ -501,6 +501,8 @@ ipcMain.handle('storeVideo', (event, { base64ByteStream, subtitles, title, clipN
 
     fs.writeFileSync(videoFilePath, Buffer.from(base64ByteStream, "base64"));
     fs.writeFileSync(subFilePath, subtitles);
+
+    return baseFileName;
 });
 
 ipcMain.handle('deleteVideo', (event, { id, game }) => {
