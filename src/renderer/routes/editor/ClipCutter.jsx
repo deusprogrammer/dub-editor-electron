@@ -9,20 +9,25 @@ import { api } from '../../util/Api';
 import WhatTheDubPlayer from '../../components/WhatTheDubPlayer';
 import TimeLine from '../../components/TimeLine';
 import SubtitleList from '../../components/SubtitleList';
-import CollectionAPI from 'api/CollectionAPI';
+import CollectionAPI from '../../api/CollectionAPI';
+import BatchAPI from '../../api/BatchAPI';
+
 import ClipList from 'renderer/components/ClipList';
 
 let AdvancedEditor = () => {
     const params = useParams();
     const navigate = useNavigate();
 
-    const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+    const [windowSize, setWindowSize] = useState({
+        width: window.innerWidth,
+        height: window.innerHeight,
+    });
 
     const [error, setError] = useState(null);
-    const [videoSource, setVideoSource] = useState("");
+    const [videoSource, setVideoSource] = useState('');
     const [clips, setClips] = useState([]);
     const [currentClip, setCurrentClip] = useState(null);
-    const [substitution, setSubstitution] = useState("");
+    const [substitution, setSubstitution] = useState('');
     const [buttonsDisabled, setButtonsDisabled] = useState(false);
 
     const [isPlaying, setIsPlaying] = useState(false);
@@ -31,26 +36,26 @@ let AdvancedEditor = () => {
 
     const [videoLength, setVideoLength] = useState(0);
 
-    let game = "";
-    if (params.type === "rifftrax") {
-        game = "RiffTrax";
-    } else if (params.type === "whatthedub") {
-        game = "What the Dub";
+    let game = '';
+    if (params.type === 'rifftrax') {
+        game = 'RiffTrax';
+    } else if (params.type === 'whatthedub') {
+        game = 'What the Dub';
     }
 
     window.onresize = () => {
-        setWindowSize({ width: window.innerWidth, height: window.innerHeight })
-    }
+        setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    };
 
     let onFileOpen = (e) => {
         let f = e.target.files[0];
         let fr = new FileReader();
         fr.onload = () => {
             setVideoSource(fr.result);
-        }
+        };
 
         fr.readAsDataURL(f);
-    }
+    };
 
     let convertSecondsToTimestamp = (seconds) => {
         let h = Math.floor(seconds / 3600);
@@ -58,8 +63,12 @@ let AdvancedEditor = () => {
         let s = Math.floor(seconds % 60);
         let ms = Math.floor((seconds - Math.trunc(seconds)) * 1000);
 
-        return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")},${ms.toString().padStart(3, "0")}`;
-    }
+        return `${h.toString().padStart(2, '0')}:${m
+            .toString()
+            .padStart(2, '0')}:${s.toString().padStart(2, '0')},${ms
+            .toString()
+            .padStart(3, '0')}`;
+    };
 
     let scrub = (seconds) => {
         if (seconds < 0) {
@@ -70,23 +79,25 @@ let AdvancedEditor = () => {
         setCurrentPosition(seconds / 1000);
         setCurrentSliderPosition(seconds);
         setIsPlaying(false);
-    }
+    };
 
     const clipChangeHandler = (mode, clip) => {
-        if (mode === "add") {
-          let newClipIndex = 0;
-          let clipList = [...clips, clip].sort((a, b) => a.startTime - b.startTime).map((modifiedClip, index) => {
-              if (!modifiedClip.index) {
-                  newClipIndex = index;
-              }
-              return {
-                  ...modifiedClip,
-                  index
-              }
-          });
-          setCurrentClip(newClipIndex);
-          setClips(clipList);
-        } else if (mode === "edit") {
+        if (mode === 'add') {
+            let newClipIndex = 0;
+            let clipList = [...clips, clip]
+                .sort((a, b) => a.startTime - b.startTime)
+                .map((modifiedClip, index) => {
+                    if (!modifiedClip.index) {
+                        newClipIndex = index;
+                    }
+                    return {
+                        ...modifiedClip,
+                        index,
+                    };
+                });
+            setCurrentClip(newClipIndex);
+            setClips(clipList);
+        } else if (mode === 'edit') {
             let clipLength = clip.endTime - clip.startTime;
             if (clip.startTime < 0) {
                 clip.startTime = 0;
@@ -101,36 +112,38 @@ let AdvancedEditor = () => {
             clipList = clipList.map((modifiedClip, index) => {
                 return {
                     ...modifiedClip,
-                    index
-                }
+                    index,
+                };
             });
             setClips(clipList);
-        } else if (mode === "remove") {
+        } else if (mode === 'remove') {
             let clipList = [...clips];
             clipList.splice(clip.index, 1);
             clipList = clipList.map((modifiedClip, index) => {
                 return {
                     ...modifiedClip,
-                    index
-                }
+                    index,
+                };
             });
             setClips(clipList);
-        } else if (mode === "sort") {
+        } else if (mode === 'sort') {
             let clipList = [...clips];
-            clipList = clipList.sort((a, b) => a.startTime - b.startTime).map((modifiedClip, index) => {
-                return {
-                    ...modifiedClip,
-                    index
-                }
-            });
+            clipList = clipList
+                .sort((a, b) => a.startTime - b.startTime)
+                .map((modifiedClip, index) => {
+                    return {
+                        ...modifiedClip,
+                        index,
+                    };
+                });
             setClips(clipList);
         }
-    }
+    };
 
     return (
         <div>
-            <div style={{ color: "red" }}>{error}</div>
-            {videoSource ?
+            <div style={{ color: 'red' }}>{error}</div>
+            {videoSource ? (
                 <div className="editor-container">
                     <div className="top-pane">
                         <WhatTheDubPlayer
@@ -150,14 +163,19 @@ let AdvancedEditor = () => {
                             }}
                             onVideoLoaded={(video) => {
                                 setVideoLength(video.duration);
-                            }} />
+                            }}
+                        />
                         <ClipList
                             game={params.type}
                             clips={clips}
                             currentClip={currentClip}
+                            currentSliderPosition={currentSliderPosition}
                             onClipsChange={clipChangeHandler}
                             onSelectClip={setCurrentClip}
-                            onSave={(title, number, collectionId) => { }} />
+                            onProcess={(title, clips) => {
+                                BatchAPI.storeBatch(clips, videoSource);
+                            }}
+                        />
                     </div>
                     <TimeLine
                         timelineWidth={windowSize.width * 0.9}
@@ -174,16 +192,21 @@ let AdvancedEditor = () => {
                         onSliderPositionChange={scrub}
                     />
                 </div>
-                :
+            ) : (
                 <div>
-                    <p>Please choose the video you wish to add subtitles to.  Note that the file needs to already be trimmed to the length you want it.</p>
+                    <p>
+                        Please choose the video you wish to add subtitles to.
+                        Note that the file needs to already be trimmed to the
+                        length you want it.
+                    </p>
                     <input type="file" accept=".mp4" onChange={onFileOpen} />
-                    <Link to="/"><button type="button">Cancel</button></Link>
+                    <Link to="/">
+                        <button type="button">Cancel</button>
+                    </Link>
                 </div>
-            }
+            )}
         </div>
     );
-}
-
+};
 
 export default AdvancedEditor;

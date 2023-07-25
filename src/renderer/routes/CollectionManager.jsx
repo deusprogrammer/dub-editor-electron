@@ -1,13 +1,13 @@
-import CollectionAPI from 'api/CollectionAPI';
+import CollectionAPI from 'renderer/api/CollectionAPI';
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router';
 import { toast } from 'react-toastify';
 
 export default () => {
-    const {game} = useParams();
-    const [newCollectionName, setNewCollectionName] = useState("");
+    const { game } = useParams();
+    const [newCollectionName, setNewCollectionName] = useState('');
     const [videos, setVideos] = useState([]);
-    const [collections, setCollections] = useState({_originals: []});
+    const [collections, setCollections] = useState({ _originals: [] });
     const [selected, setSelected] = useState(null);
 
     useEffect(() => {
@@ -15,102 +15,247 @@ export default () => {
     }, [game]);
 
     const loadData = async () => {
-        const collectionMap = await window.api.send("getCollections", game);
-        const videoList = await window.api.send("getVideos", game);
+        const collectionMap = await window.api.send('getCollections', game);
+        const videoList = await window.api.send('getVideos', game);
         setCollections(collectionMap);
         setVideos(videoList);
-    }
+    };
 
     const createNewCollection = async () => {
-        const collectionMap = await CollectionAPI.createNewCollection(newCollectionName, game);
+        const collectionMap = await CollectionAPI.createNewCollection(
+            newCollectionName,
+            game
+        );
         setCollections(collectionMap);
-        setNewCollectionName("");
-        toast("Created new clip pack!", {type: "info"});
-    }
+        setNewCollectionName('');
+        toast('Created new clip pack!', { type: 'info' });
+    };
 
     const deleteCollection = async (collectionId, deleteFiles = false) => {
-        const collectionMap = await CollectionAPI.deleteCollection(collectionId, game, deleteFiles);
+        const collectionMap = await CollectionAPI.deleteCollection(
+            collectionId,
+            game,
+            deleteFiles
+        );
         setCollections(collectionMap);
-        toast("Deleted clip pack!", {type: "info"});
-    }
+        toast('Deleted clip pack!', { type: 'info' });
+    };
 
     const removeFromCollection = async (collectionId, videoId) => {
-        const collectionMap = await CollectionAPI.removeFromCollection(collectionId, game, videoId);
+        const collectionMap = await CollectionAPI.removeFromCollection(
+            collectionId,
+            game,
+            videoId
+        );
         setCollections(collectionMap);
-    }
+    };
 
     const addToCollection = async (collectionId, videoId) => {
-        const collectionMap = await CollectionAPI.addToCollection(collectionId, game, videoId);
+        const collectionMap = await CollectionAPI.addToCollection(
+            collectionId,
+            game,
+            videoId
+        );
         setCollections(collectionMap);
-    }
+    };
 
     const launch = async (except) => {
-        const gameId = game === "rifftrax" ? "1707870" : "1495860";
-        await window.api.send("disableVideos", {game, except});
+        const gameId = game === 'rifftrax' ? '1707870' : '1495860';
+        await window.api.send('disableVideos', { game, except });
         window.open(`steam://run/${gameId}`);
-    }
+    };
 
     const exportCollection = (collectionId) => {
-        window.api.send("exportCollection", {game, collectionId});
-        toast("Exporting clip pack...", {type: "info"});
-    }
+        window.api.send('exportCollection', { game, collectionId });
+        toast('Exporting clip pack...', { type: 'info' });
+    };
 
     const importZip = async () => {
-        toast("Importing clip pack...", {type: "info"});
-        const collectionMap = await window.api.send("importZip", game);
+        toast('Importing clip pack...', { type: 'info' });
+        const collectionMap = await window.api.send('importZip', game);
         if (!collectionMap) {
-          return;
+            return;
         }
         setCollections(collectionMap);
-        toast("Imported new clip pack!", {type: "info"});
-    }
+        toast('Imported new clip pack!', { type: 'info' });
+    };
 
     if (!selected) {
         return (
             <div>
                 <h2>Pack Manager ({game})</h2>
                 <h3>Actions</h3>
-                <button type="button" onClick={() => {importZip()}}>Import Clip Pack</button>
+                <button
+                    type="button"
+                    onClick={() => {
+                        importZip();
+                    }}
+                >
+                    Import Clip Pack
+                </button>
                 <h3>Clip Packs</h3>
-                <table style={{margin: "auto"}}>
+                <table style={{ margin: 'auto' }}>
                     <tbody>
                         <tr>
-                            <td></td><td><input type="text" placeholder="Collection Name" value={newCollectionName} onChange={({target: {value}}) => {setNewCollectionName(value)}} /></td><td><button type="button" onClick={() => {createNewCollection()}}>Create</button></td><td></td><td></td><td></td>
+                            <td></td>
+                            <td>
+                                <input
+                                    type="text"
+                                    placeholder="Collection Name"
+                                    value={newCollectionName}
+                                    onChange={({ target: { value } }) => {
+                                        setNewCollectionName(value);
+                                    }}
+                                />
+                            </td>
+                            <td>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        createNewCollection();
+                                    }}
+                                >
+                                    Create
+                                </button>
+                            </td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
                         </tr>
                         <tr>
-                            <td style={{textAlign: "left"}}><b>Originals</b> ({videos.filter(video => !video._id.startsWith("_")).length} videos)</td>
-                            <td><button onClick={() => {launch(videos.filter(video => !video._id.startsWith("_")).map(video => video._id))}}>Launch</button></td>
+                            <td style={{ textAlign: 'left' }}>
+                                <b>Originals</b> (
+                                {
+                                    videos.filter(
+                                        (video) => !video._id.startsWith('_')
+                                    ).length
+                                }{' '}
+                                videos)
+                            </td>
+                            <td>
+                                <button
+                                    onClick={() => {
+                                        launch(
+                                            videos
+                                                .filter(
+                                                    (video) =>
+                                                        !video._id.startsWith(
+                                                            '_'
+                                                        )
+                                                )
+                                                .map((video) => video._id)
+                                        );
+                                    }}
+                                >
+                                    Launch
+                                </button>
+                            </td>
                         </tr>
-                        {Object.keys(collections).map(key => {
+                        {Object.keys(collections).map((key) => {
                             return (
                                 <tr key={key}>
-                                    <td style={{textAlign: "left"}}><b>{key}</b> ({collections[key].length} videos)</td>
-                                    <td><button onClick={() => {launch(collections[key])}}>Launch</button><button onClick={() => {setSelected(key)}}>Edit</button><button onClick={() => {exportCollection(key)}}>Export</button><button type="button" onClick={() => {deleteCollection(key)}}>Delete Collection</button><button type="button" onClick={() => {deleteCollection(key, true)}}>Delete Collection and Files</button></td>
-                                </tr>);
+                                    <td style={{ textAlign: 'left' }}>
+                                        <b>{key}</b> ({collections[key].length}{' '}
+                                        videos)
+                                    </td>
+                                    <td>
+                                        <button
+                                            onClick={() => {
+                                                launch(collections[key]);
+                                            }}
+                                        >
+                                            Launch
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setSelected(key);
+                                            }}
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                exportCollection(key);
+                                            }}
+                                        >
+                                            Export
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                deleteCollection(key);
+                                            }}
+                                        >
+                                            Delete Collection
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                deleteCollection(key, true);
+                                            }}
+                                        >
+                                            Delete Collection and Files
+                                        </button>
+                                    </td>
+                                </tr>
+                            );
                         })}
                     </tbody>
                 </table>
             </div>
-        )
+        );
     } else {
         let collectionId = selected;
         return (
             <div>
-                <br/>
-                <button type="button" onClick={() => {setSelected(null)}}>Back to Collection List</button>
+                <br />
+                <button
+                    type="button"
+                    onClick={() => {
+                        setSelected(null);
+                    }}
+                >
+                    Back to Collection List
+                </button>
                 <h2>Clip Pack {collectionId}</h2>
-                {collections[collectionId].map(videoId => {
+                {collections[collectionId].map((videoId) => {
                     return (
-                        <div><button type="button" onClick={() => {removeFromCollection(videoId)}}>-</button>{videoId.replace(/_/g, " ")}</div>
-                    )
+                        <div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    removeFromCollection(videoId);
+                                }}
+                            >
+                                -
+                            </button>
+                            {videoId.replace(/_/g, ' ')}
+                        </div>
+                    );
                 })}
                 <h2>Videos Not in Clip Pack</h2>
-                {videos.filter(video => !collections[collectionId].includes(video._id) && video._id.startsWith("_")).map(({_id : videoId}) => {
-                    return (
-                        <div><button type="button" onClick={() => {addToCollection(collectionId, videoId)}}>+</button>{videoId.replace(/_/g, " ")}</div>
+                {videos
+                    .filter(
+                        (video) =>
+                            !collections[collectionId].includes(video._id) &&
+                            video._id.startsWith('_')
                     )
-                })}
+                    .map(({ _id: videoId }) => {
+                        return (
+                            <div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        addToCollection(collectionId, videoId);
+                                    }}
+                                >
+                                    +
+                                </button>
+                                {videoId.replace(/_/g, ' ')}
+                            </div>
+                        );
+                    })}
             </div>
-        )
+        );
     }
-}
+};

@@ -1,15 +1,19 @@
 function uuidv4() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
+        /[xy]/g,
+        function (c) {
+            var r = (Math.random() * 16) | 0,
+                v = c == 'x' ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+        }
+    );
 }
 
 export let convertTimestampToSeconds = (timestamp) => {
     let regex = /(\d\d):(\d\d):(\d\d),(\d\d\d)/;
     let match = regex.exec(timestamp);
 
-    console.log("TIMESTAMP: " + timestamp);
+    console.log('TIMESTAMP: ' + timestamp);
 
     let h = parseInt(match[1]);
     let m = parseInt(match[2]);
@@ -17,7 +21,7 @@ export let convertTimestampToSeconds = (timestamp) => {
     let ms = parseInt(match[4]);
 
     return h * 3600 + m * 60 + s + ms / 1000;
-}
+};
 
 export let convertSecondsToTimestamp = (seconds) => {
     let h = Math.floor(seconds / 3600);
@@ -25,28 +29,41 @@ export let convertSecondsToTimestamp = (seconds) => {
     let s = Math.floor(seconds % 60);
     let ms = Math.floor((seconds - Math.trunc(seconds)) * 1000);
 
-    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")},${ms.toString().padStart(3, "0")}`;
-}
+    return `${h.toString().padStart(2, '0')}:${m
+        .toString()
+        .padStart(2, '0')}:${s.toString().padStart(2, '0')},${ms
+        .toString()
+        .padStart(3, '0')}`;
+};
 
 export let convertSecondsToAltTimestamp = (seconds) => {
     let m = Math.floor(seconds / 60);
     let s = Math.floor(seconds % 60);
     let ms = Math.floor((seconds - Math.trunc(seconds)) * 1000);
 
-    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}.${ms.toString().padStart(3, "0")}`;
-}
+    return `${m.toString().padStart(2, '0')}:${s
+        .toString()
+        .padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
+};
 
 export let convertSubtitlesToSrt = (subtitles, game) => {
-    return subtitles.map((subtitle, index) => {
-        let text = subtitle.text;
-        if (subtitle.type === "dynamic" && game === "rifftrax") {
-            text = "[Insert Riff Here]";
-        } else if (subtitle.type === "dynamic" && game === "whatthedub") {
-            text = subtitle.voice === "male" ? "[male_dub]" : "[female:dub]"
-        }
-        return `${index + 1}\n${convertSecondsToTimestamp(subtitle.startTime/1000)} --> ${convertSecondsToTimestamp(subtitle.endTime/1000)}\n${text}`;
-    }).join("\n\n");
-}
+    return subtitles
+        .map((subtitle, index) => {
+            let text = subtitle.text;
+            if (subtitle.type === 'dynamic' && game === 'rifftrax') {
+                text = '[Insert Riff Here]';
+            } else if (subtitle.type === 'dynamic' && game === 'whatthedub') {
+                text =
+                    subtitle.voice === 'male' ? '[male_dub]' : '[female:dub]';
+            }
+            return `${index + 1}\n${convertSecondsToTimestamp(
+                subtitle.startTime / 1000
+            )} --> ${convertSecondsToTimestamp(
+                subtitle.endTime / 1000
+            )}\n${text}`;
+        })
+        .join('\n\n');
+};
 
 export let convertSrtToSubtitles = (srtBase64) => {
     let subtitles = [];
@@ -55,8 +72,8 @@ export let convertSrtToSubtitles = (srtBase64) => {
 
     let srt = atob(srtBase64);
     let n = 0;
-    srt.split("\n").forEach(line => {
-        console.log("LINE: " + line);
+    srt.split('\n').forEach((line) => {
+        console.log('LINE: ' + line);
         switch (n++) {
             case 0:
                 break;
@@ -68,7 +85,7 @@ export let convertSrtToSubtitles = (srtBase64) => {
 
                 let startTime = match[1];
                 let endTime = match[2];
-                console.log(startTime + " => " + endTime);
+                console.log(startTime + ' => ' + endTime);
                 subtitle.startTime = convertTimestampToSeconds(startTime);
                 subtitle.endTime = convertTimestampToSeconds(endTime);
                 break;
@@ -76,7 +93,7 @@ export let convertSrtToSubtitles = (srtBase64) => {
                 subtitle.text = line;
                 break;
             case 3:
-                if (line !== "") {
+                if (line !== '') {
                     n = 3;
                     return;
                 }
@@ -88,27 +105,54 @@ export let convertSrtToSubtitles = (srtBase64) => {
     });
 
     return subtitles;
-}
+};
 
 export let convertSubtitlesToWebVtt = (subtitles, substitution) => {
-    if (!substitution || substitution === "") {
-        substitution = "[Missing Audio]";
+    if (!substitution || substitution === '') {
+        substitution = '[Missing Audio]';
     }
-    let webvtt = "WEBVTT\n\n" + subtitles.map((subtitle) => {
-        if (substitution && subtitle.type === "dynamic") {
-            return `${convertSecondsToAltTimestamp(subtitle.startTime/1000)} --> ${convertSecondsToAltTimestamp(subtitle.endTime/1000)}\n${substitution}`;
-        } else {
-            return `${convertSecondsToAltTimestamp(subtitle.startTime/1000)} --> ${convertSecondsToAltTimestamp(subtitle.endTime/1000)}\n${subtitle.text}`;
-        }
-    }).join("\n\n");
+    let webvtt =
+        'WEBVTT\n\n' +
+        subtitles
+            .map((subtitle) => {
+                if (substitution && subtitle.type === 'dynamic') {
+                    return `${convertSecondsToAltTimestamp(
+                        subtitle.startTime / 1000
+                    )} --> ${convertSecondsToAltTimestamp(
+                        subtitle.endTime / 1000
+                    )}\n${substitution}`;
+                } else {
+                    return `${convertSecondsToAltTimestamp(
+                        subtitle.startTime / 1000
+                    )} --> ${convertSecondsToAltTimestamp(
+                        subtitle.endTime / 1000
+                    )}\n${subtitle.text}`;
+                }
+            })
+            .join('\n\n');
 
     return webvtt;
-}
+};
 
 export let createWebVttDataUri = (subtitles, substitution) => {
-    return "data:text/vtt;base64," + btoa(convertSubtitlesToWebVtt(subtitles, substitution));
-}
+    return (
+        'data:text/vtt;base64,' +
+        btoa(convertSubtitlesToWebVtt(subtitles, substitution))
+    );
+};
 
-export let addVideo = async (base64ByteStream, subtitles, title, clipNumber = 1, type) => {
-    return await window.api.send("storeVideo", {base64ByteStream, subtitles: convertSubtitlesToSrt(subtitles, type), title, clipNumber, game: type});
-}
+export let addVideo = async (
+    base64ByteStream,
+    subtitles,
+    title,
+    clipNumber = 1,
+    type
+) => {
+    return await window.api.send('storeVideo', {
+        base64ByteStream,
+        subtitles: convertSubtitlesToSrt(subtitles, type),
+        title,
+        clipNumber,
+        game: type,
+    });
+};

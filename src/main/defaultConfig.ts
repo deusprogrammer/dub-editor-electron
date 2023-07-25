@@ -2,12 +2,12 @@ type Config = {
     whatTheDubDirectory: string | null;
     rifftraxDirectory: string | null;
     isMac: boolean;
-}
+};
 
-const defaultConfig : Config = {
+const defaultConfig: Config = {
     whatTheDubDirectory: null,
     rifftraxDirectory: null,
-    isMac: false
-}
+    isMac: false,
+};
 
 export default defaultConfig;
