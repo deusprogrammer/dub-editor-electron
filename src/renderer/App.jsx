@@ -13,6 +13,7 @@ import About from './routes/About';
 
 import 'react-toastify/dist/ReactToastify.css';
 import ClipEditor from './routes/editor/ClipEditor';
+import ClipCutter from './routes/editor/ClipCutter';
 import SimpleEditor from './routes/editor/SimpleEditor';
 
 const VERSION = "v1.2.3-beta";
@@ -72,6 +73,7 @@ let App = (props) => {
                 <Routes>
                     <Route exact path={`/about/:game`} element={<About />} />
                     <Route exact path={`/config/:game`} element={<Config />} />
+                    <Route exact path={`/batch/:type`} element={<ClipCutter game={game} />} />
                     <Route exact path={`/create/:type`} element={<ClipEditor game={game} />} />
                     <Route exact path={`/create/advanced/:type`} element={<AdvancedEditor />} />
                     <Route exact path={`/create/simple/:type`} element={<SimpleEditor />} />

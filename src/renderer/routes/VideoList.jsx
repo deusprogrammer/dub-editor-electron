@@ -26,8 +26,9 @@ let VideoList = () => {
             <h2>Custom Clips ({game})</h2>
             <h3>Actions</h3>
             <Link to={`/create/${game}`}><button>New Clip</button></Link>
+            <Link to={`/batch/${game}`}><button>New Batch</button></Link>
             <h3>Clips</h3>
-            {videos.filter(video => video._id.startsWith("_")).length > 0 ? 
+            {videos.filter(video => video._id.startsWith("_")).length > 0 ?
             <table style={{margin: "auto"}}>
                 <tbody>
                     {videos.filter(video => video._id.startsWith("_")).map((video, index) => {

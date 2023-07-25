@@ -17,9 +17,10 @@ let dragEndTime = null;
 let dragSub = null;
 let isResizing = false;
 
-export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, videoLength, subs, onSliderPositionChange, onSubsChange, onStateChange, onSubSelect}) => {
+export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, videoLength, subs, onSliderPositionChange, onSubsChange, onStateChange, onSubSelect, rowCount}) => {
     const [currentRow, setCurrentRow] = useState(0);
     let videoLengthMs = videoLength * 1000;
+    let defaultClipSize = videoLengthMs * 0.10;
 
     useEffect(() => {
         document.ondragover = (e) => {
@@ -29,11 +30,11 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
 
     const createNewSub = () => {
         onSubsChange(
-            "add", 
+            "add",
             {
                 rowIndex: currentRow,
-                startTime: parseInt(currentSliderPosition), 
-                endTime: parseInt(currentSliderPosition) + 1000, 
+                startTime: parseInt(currentSliderPosition),
+                endTime: parseInt(currentSliderPosition) + defaultClipSize,
                 text: "",
                 type: "subtitle",
                 voice: "male"
@@ -42,18 +43,18 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
     }
 
     const timelineRows = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < rowCount; i++) {
         timelineRows.push([]);
     }
     subs.forEach((sub) => {
-        if (sub.rowIndex >= 5) {
+        if (sub.rowIndex >= rowCount) {
             return;
         }
         timelineRows[sub.rowIndex].push(sub);
     });
 
     console.log("CURRENT SUB: " + currentSub);
-    
+
     return (
         <div className="timeline">
             <div>
@@ -65,33 +66,33 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
                 <AddSubButton onClick={createNewSub} />
                 <span>{convertMillisecondsToTimestamp(currentSliderPosition)}</span>
             </div>
-            <input 
-                type="range" 
-                style={{width: `${timelineWidth}px`, padding: "0px", margin: "0px"}} 
-                value={currentSliderPosition} 
+            <input
+                type="range"
+                style={{width: `${timelineWidth}px`, padding: "0px", margin: "0px"}}
+                value={currentSliderPosition}
                 step={1}
                 max={videoLengthMs}
                 onChange={(e) => {onSliderPositionChange(e.target.value)}} />
             <div style={{width: `${timelineWidth}px`, height: "100%", position: "relative"}}>
-                <div 
+                <div
                     style={{
-                        position: "absolute", 
-                        left: `${currentSliderPosition/videoLengthMs * timelineWidth}px`, 
-                        width: "2px", 
-                        height: "100%", 
-                        backgroundColor: "black", 
+                        position: "absolute",
+                        left: `${currentSliderPosition/videoLengthMs * timelineWidth}px`,
+                        width: "2px",
+                        height: "100%",
+                        backgroundColor: "black",
                         zIndex: 10001
                     }} />
                 {timelineRows.map((timelineRow, rowIndex) => {
                     return (
-                        <div 
+                        <div
                             style={{
                                 cursor: "pointer",
                                 position: "relative",
                                 borderTop: rowIndex === 0 ? "1px solid black" : "none",
-                                borderBottom: "1px solid black", 
-                                height: "27px", 
-                                width: timelineWidth, 
+                                borderBottom: "1px solid black",
+                                height: "27px",
+                                width: timelineWidth,
                                 backgroundColor: rowIndex === currentRow ? "darkgray" : "white"}}
                             onClick={() => {
                                 setCurrentRow(rowIndex);
@@ -164,7 +165,7 @@ export default ({timelineWidth, isPlaying, currentSub, currentSliderPosition, vi
                                         }}
                                     >
                                     </div>
-                                    <div 
+                                    <div
                                         className={`${sub.index === currentSub ? 'subtitle selected' : 'subtitle'}`}
                                         onClick={() => {
                                             onSubSelect(sub.index);

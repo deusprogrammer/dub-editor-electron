@@ -10,6 +10,7 @@ import WhatTheDubPlayer from '../../components/WhatTheDubPlayer';
 import TimeLine from '../../components/TimeLine';
 import SubtitleList from '../../components/SubtitleList';
 import CollectionAPI from 'api/CollectionAPI';
+import ClipList from 'renderer/components/ClipList';
 
 let AdvancedEditor = () => {
     const params = useParams();
@@ -19,8 +20,8 @@ let AdvancedEditor = () => {
 
     const [error, setError] = useState(null);
     const [videoSource, setVideoSource] = useState("");
-    const [subs, setSubs] = useState([]);
-    const [currentSub, setCurrentSub] = useState(null);
+    const [clips, setClips] = useState([]);
+    const [currentClip, setCurrentClip] = useState(null);
     const [substitution, setSubstitution] = useState("");
     const [buttonsDisabled, setButtonsDisabled] = useState(false);
 
@@ -71,86 +72,58 @@ let AdvancedEditor = () => {
         setIsPlaying(false);
     }
 
-    let addVideoToGame = async (videoName, clipNumber, collectionId) => {
-        if (await checkClipExists(videoName, clipNumber)) {
-            setError("Clip with this name and number already exists");
-            return;
-        }
-
-        setError(null);
-
-        try {
-            setButtonsDisabled(true);
-            let videoId = await addVideo(videoSource.substring(videoSource.indexOf(',') + 1), subs, videoName, clipNumber, params.type);
-            if (!collectionId.startsWith("_")) {
-                await CollectionAPI.addToCollection(collectionId, params.type, videoId);
-            }
-            setButtonsDisabled(false);
-
-            toast(`Clip added successfully!`, { type: "info" });
-            navigate('/');
-        } catch (error) {
-            console.error(error);
-            toast(`Clip add failed!`, { type: "error" });
-        }
-    }
-
-    let checkClipExists = async (title, clipNumber) => {
-        return await api.send("clipExists", { title, clipNumber, game: params.type });
-    }
-
-    const subChangeHandler = (mode, sub) => {
+    const clipChangeHandler = (mode, clip) => {
         if (mode === "add") {
-            let newSubIndex = 0;
-            let subList = [...subs, sub].sort((a, b) => a.startTime - b.startTime).map((modifiedSub, index) => {
-                if (!modifiedSub.index) {
-                    newSubIndex = index;
-                }
-                return {
-                    ...modifiedSub,
-                    index
-                }
-            });
-            setCurrentSub(newSubIndex);
-            setSubs(subList);
+          let newClipIndex = 0;
+          let clipList = [...clips, clip].sort((a, b) => a.startTime - b.startTime).map((modifiedClip, index) => {
+              if (!modifiedClip.index) {
+                  newClipIndex = index;
+              }
+              return {
+                  ...modifiedClip,
+                  index
+              }
+          });
+          setCurrentClip(newClipIndex);
+          setClips(clipList);
         } else if (mode === "edit") {
-            let subLength = sub.endTime - sub.startTime;
-            if (sub.startTime < 0) {
-                sub.startTime = 0;
-                sub.endTime = sub.startTime + subLength;
+            let clipLength = clip.endTime - clip.startTime;
+            if (clip.startTime < 0) {
+                clip.startTime = 0;
+                clip.endTime = clip.startTime + clipLength;
             }
-            if (sub.endTime > videoLength * 1000) {
-                sub.endTime = videoLength * 1000;
-                sub.startTime = sub.endTime - subLength;
+            if (clip.endTime > videoLength * 1000) {
+                clip.endTime = videoLength * 1000;
+                clip.startTime = clip.endTime - clipLength;
             }
-            let subList = [...subs];
-            subList[sub.index] = sub;
-            subList = subList.map((modifiedSub, index) => {
+            let clipList = [...clips];
+            clipList[clip.index] = clip;
+            clipList = clipList.map((modifiedClip, index) => {
                 return {
-                    ...modifiedSub,
+                    ...modifiedClip,
                     index
                 }
             });
-            setSubs(subList);
+            setClips(clipList);
         } else if (mode === "remove") {
-            let subList = [...subs];
-            subList.splice(sub.index, 1);
-            subList = subList.map((modifiedSub, index) => {
+            let clipList = [...clips];
+            clipList.splice(clip.index, 1);
+            clipList = clipList.map((modifiedClip, index) => {
                 return {
-                    ...modifiedSub,
+                    ...modifiedClip,
                     index
                 }
             });
-            setSubs(subList);
+            setClips(clipList);
         } else if (mode === "sort") {
-            let subList = [...subs];
-            subList = subList.sort((a, b) => a.startTime - b.startTime).map((modifiedSub, index) => {
+            let clipList = [...clips];
+            clipList = clipList.sort((a, b) => a.startTime - b.startTime).map((modifiedClip, index) => {
                 return {
-                    ...modifiedSub,
+                    ...modifiedClip,
                     index
                 }
             });
-            setSubs(subList);
+            setClips(clipList);
         }
     }
 
@@ -164,13 +137,13 @@ let AdvancedEditor = () => {
                             videoSource={videoSource}
                             isPlaying={isPlaying}
                             videoPosition={currentPosition}
-                            subs={subs}
                             substitution={substitution}
+                            subs={[]}
                             onEnd={() => {
                                 setIsPlaying(false);
                             }}
                             onIndexChange={(index) => {
-                                setCurrentSub(index);
+                                setCurrentClip(index);
                             }}
                             onVideoPositionChange={(position) => {
                                 setCurrentSliderPosition(position * 1000);
@@ -178,27 +151,26 @@ let AdvancedEditor = () => {
                             onVideoLoaded={(video) => {
                                 setVideoLength(video.duration);
                             }} />
-                        <SubtitleList
+                        <ClipList
                             game={params.type}
-                            currentSliderPosition={currentSliderPosition}
-                            currentSub={currentSub}
-                            subs={subs}
-                            onSubsChange={subChangeHandler}
-                            onSelectSub={setCurrentSub}
-                            onSave={(title, number, collectionId) => { addVideoToGame(title, number, collectionId) }} />
+                            clips={clips}
+                            currentClip={currentClip}
+                            onClipsChange={clipChangeHandler}
+                            onSelectClip={setCurrentClip}
+                            onSave={(title, number, collectionId) => { }} />
                     </div>
                     <TimeLine
                         timelineWidth={windowSize.width * 0.9}
-                        rowCount={5}
+                        rowCount={1}
                         isPlaying={isPlaying}
-                        currentSub={currentSub}
+                        currentSub={currentClip}
                         currentPosition={currentPosition}
                         currentSliderPosition={currentSliderPosition}
                         videoLength={videoLength}
-                        subs={subs}
+                        subs={clips}
                         onStateChange={setIsPlaying}
-                        onSubSelect={setCurrentSub}
-                        onSubsChange={subChangeHandler}
+                        onSubSelect={setCurrentClip}
+                        onSubsChange={clipChangeHandler}
                         onSliderPositionChange={scrub}
                     />
                 </div>
