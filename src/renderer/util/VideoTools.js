@@ -107,7 +107,7 @@ export let convertSrtToSubtitles = (srtBase64) => {
     return subtitles;
 };
 
-export let convertSubtitlesToWebVtt = (subtitles, substitution) => {
+export let convertSubtitlesToWebVtt = (subtitles, substitution, offset = 0) => {
     if (!substitution || substitution === '') {
         substitution = '[Missing Audio]';
     }
@@ -117,15 +117,15 @@ export let convertSubtitlesToWebVtt = (subtitles, substitution) => {
             .map((subtitle) => {
                 if (substitution && subtitle.type === 'dynamic') {
                     return `${convertSecondsToAltTimestamp(
-                        subtitle.startTime / 1000
+                        (subtitle.startTime + offset) / 1000
                     )} --> ${convertSecondsToAltTimestamp(
-                        subtitle.endTime / 1000
+                        (subtitle.endTime + offset) / 1000
                     )}\n${substitution}`;
                 } else {
                     return `${convertSecondsToAltTimestamp(
-                        subtitle.startTime / 1000
+                        (subtitle.startTime + offset) / 1000
                     )} --> ${convertSecondsToAltTimestamp(
-                        subtitle.endTime / 1000
+                        (subtitle.endTime + offset) / 1000
                     )}\n${subtitle.text}`;
                 }
             })
@@ -134,10 +134,10 @@ export let convertSubtitlesToWebVtt = (subtitles, substitution) => {
     return webvtt;
 };
 
-export let createWebVttDataUri = (subtitles, substitution) => {
+export let createWebVttDataUri = (subtitles, substitution, offset = 0) => {
     return (
         'data:text/vtt;base64,' +
-        btoa(convertSubtitlesToWebVtt(subtitles, substitution))
+        btoa(convertSubtitlesToWebVtt(subtitles, substitution, offset))
     );
 };
 

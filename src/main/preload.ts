@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('api', {
             'updateConfig',
             'getConfig',
             'storeBatch',
+            'hasBatch',
             'nextBatchClip',
             'popNextBatchClip',
             'clearBatchCache',

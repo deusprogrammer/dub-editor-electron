@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 export default ({ game }) => {
+    const [searchParams] = useSearchParams();
     const [editor, setEditor] = useState(null);
     const navigate = useNavigate();
 
@@ -15,7 +16,10 @@ export default ({ game }) => {
     };
 
     if (['simple', 'advanced'].includes(editor)) {
-        navigate(`/create/${editor}/${game}`);
+        console.log('IS BATCH: ' + searchParams.get('batch'));
+        navigate(
+            `/create/${editor}/${game}?batch=${searchParams.get('batch')}`
+        );
         return <div>Redirecting</div>;
     }
 

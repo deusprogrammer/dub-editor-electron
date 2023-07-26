@@ -25,8 +25,9 @@ export default ({
     timelineWidth,
     isPlaying,
     currentSub,
-    currentSliderPosition,
+    currentSliderPosition: actualSliderPosition,
     videoLength,
+    offset,
     subs,
     onSliderPositionChange,
     onSubsChange,
@@ -37,6 +38,8 @@ export default ({
     const [currentRow, setCurrentRow] = useState(0);
     let videoLengthMs = videoLength * 1000;
     let defaultClipSize = videoLengthMs * 0.1;
+    let currentSliderPosition = actualSliderPosition - offset;
+    let currentPosition = currentSliderPosition / 1000;
 
     useEffect(() => {
         document.ondragover = (e) => {
@@ -66,8 +69,6 @@ export default ({
         timelineRows[sub.rowIndex].push(sub);
     });
 
-    console.log('CURRENT SUB: ' + currentSub);
-
     return (
         <div className="timeline">
             <div>
@@ -80,10 +81,12 @@ export default ({
                 >
                     &lt;
                 </button>
-                {!isPlaying ? (
+                {!isPlaying && currentPosition < videoLength ? (
                     <button
                         onClick={() => {
-                            onStateChange(true);
+                            if (currentSliderPosition < videoLengthMs) {
+                                onStateChange(true);
+                            }
                         }}
                     >
                         Play
@@ -122,7 +125,8 @@ export default ({
                 step={1}
                 max={videoLengthMs}
                 onChange={(e) => {
-                    onSliderPositionChange(e.target.value);
+                    console.log('OFFSET: ' + offset);
+                    onSliderPositionChange(parseFloat(e.target.value) + offset);
                 }}
             />
             <div
@@ -192,7 +196,7 @@ export default ({
                                     endTime,
                                 });
                                 setCurrentRow(rowIndex);
-                                onSliderPositionChange(startTime);
+                                onSliderPositionChange(startTime - offset);
                             }}
                         >
                             {timelineRow.map((sub) => {
@@ -235,7 +239,7 @@ export default ({
                                                     startTime,
                                                 });
                                                 onSliderPositionChange(
-                                                    startTime
+                                                    startTime - offset
                                                 );
                                                 onSubSelect(sub.index);
                                             }}
@@ -311,7 +315,7 @@ export default ({
                                                     endTime,
                                                 });
                                                 onSliderPositionChange(
-                                                    startTime
+                                                    startTime - offset
                                                 );
                                                 onSubSelect(sub.index);
                                             }}
@@ -374,7 +378,9 @@ export default ({
                                                     ...sub,
                                                     endTime,
                                                 });
-                                                onSliderPositionChange(endTime);
+                                                onSliderPositionChange(
+                                                    endTime - offset
+                                                );
                                                 onSubSelect(sub.index);
                                             }}
                                             onDragEnd={(event) => {

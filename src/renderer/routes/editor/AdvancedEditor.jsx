@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { addVideo } from '../../util/VideoTools';
 
@@ -10,8 +10,10 @@ import WhatTheDubPlayer from '../../components/WhatTheDubPlayer';
 import TimeLine from '../../components/TimeLine';
 import SubtitleList from '../../components/SubtitleList';
 import CollectionAPI from '../../api/CollectionAPI';
+import BatchAPI from 'renderer/api/BatchAPI';
 
 let AdvancedEditor = () => {
+    const [searchParams] = useSearchParams();
     const params = useParams();
     const navigate = useNavigate();
 
@@ -19,6 +21,9 @@ let AdvancedEditor = () => {
         width: window.innerWidth,
         height: window.innerHeight,
     });
+
+    const [batchClip, setBatchClip] = useState(null);
+    const [offset, setOffset] = useState(0);
 
     const [error, setError] = useState(null);
     const [videoSource, setVideoSource] = useState('');
@@ -32,6 +37,7 @@ let AdvancedEditor = () => {
     const [currentSliderPosition, setCurrentSliderPosition] = useState(0);
 
     const [videoLength, setVideoLength] = useState(0);
+    const [actualVideoLength, setActualVideoLength] = useState(0);
 
     let game = '';
     if (params.type === 'rifftrax') {
@@ -40,8 +46,26 @@ let AdvancedEditor = () => {
         game = 'What the Dub';
     }
 
+    let isBatch = searchParams.get('batch') === 'true';
+
     window.onresize = () => {
         setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+
+    useEffect(() => {
+        if (isBatch) {
+            getNextBatch();
+        }
+    }, []);
+
+    const getNextBatch = async () => {
+        let { clip, video } = await BatchAPI.nextBatchClip();
+        setVideoSource(video);
+        setVideoLength((clip.endTime - clip.startTime) / 1000);
+        setBatchClip(clip);
+        setOffset(clip.startTime);
+        setCurrentSliderPosition(clip.startTime);
+        setCurrentPosition(clip.startTime / 1000);
     };
 
     let onFileOpen = (e) => {
@@ -67,14 +91,15 @@ let AdvancedEditor = () => {
             .padStart(3, '0')}`;
     };
 
-    let scrub = (seconds) => {
-        if (seconds < 0) {
-            seconds = 0;
-        } else if (seconds > videoLength * 1000) {
-            seconds = videoLength * 1000;
+    let scrub = (milliseconds) => {
+        if (milliseconds < 0) {
+            milliseconds = 0;
+        } else if (milliseconds > actualVideoLength * 1000) {
+            milliseconds = videoLength * 1000;
         }
-        setCurrentPosition(seconds / 1000);
-        setCurrentSliderPosition(seconds);
+
+        setCurrentPosition(milliseconds / 1000);
+        setCurrentSliderPosition(milliseconds);
         setIsPlaying(false);
     };
 
@@ -179,6 +204,10 @@ let AdvancedEditor = () => {
         }
     };
 
+    if (isBatch && !videoSource) {
+        return <div>Loading Video...</div>;
+    }
+
     return (
         <div>
             <div style={{ color: 'red' }}>{error}</div>
@@ -190,6 +219,7 @@ let AdvancedEditor = () => {
                             isPlaying={isPlaying}
                             videoPosition={currentPosition}
                             subs={subs}
+                            offset={offset}
                             substitution={substitution}
                             onEnd={() => {
                                 setIsPlaying(false);
@@ -201,13 +231,19 @@ let AdvancedEditor = () => {
                                 setCurrentSliderPosition(position * 1000);
                             }}
                             onVideoLoaded={(video) => {
-                                setVideoLength(video.duration);
+                                if (!videoLength) {
+                                    setVideoLength(video.duration);
+                                }
+                                setActualVideoLength(video.duration);
                             }}
                         />
                         <SubtitleList
                             game={params.type}
-                            currentSliderPosition={currentSliderPosition}
+                            currentSliderPosition={
+                                currentSliderPosition - offset
+                            }
                             currentSub={currentSub}
+                            offset={offset}
                             subs={subs}
                             onSubsChange={subChangeHandler}
                             onSelectSub={setCurrentSub}
@@ -221,7 +257,8 @@ let AdvancedEditor = () => {
                         rowCount={5}
                         isPlaying={isPlaying}
                         currentSub={currentSub}
-                        currentPosition={currentPosition}
+                        offset={offset}
+                        currentPosition={currentPosition * 1000}
                         currentSliderPosition={currentSliderPosition}
                         videoLength={videoLength}
                         subs={subs}

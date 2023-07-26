@@ -585,10 +585,15 @@ ipcMain.handle('storeBatch', (event, { clips, video }) => {
     );
 });
 
+ipcMain.handle('hasBatch', (event) => {
+    return batchCache.video;
+});
+
 ipcMain.handle('nextBatchClip', (event) => {
+    const {startTime, endTime} = batchCache.clips[0];
     return {
         clip: batchCache.clips[0],
-        video: batchCache.video,
+        video: batchCache.video + `#t=${startTime/1000},${endTime/1000}`
     };
 });
 

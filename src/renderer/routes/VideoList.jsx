@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import BatchAPI from 'renderer/api/BatchAPI';
 
 let VideoList = () => {
     const { game } = useParams();
     const [videos, setVideos] = useState([]);
+    const [hasBatch, setHasBatch] = useState(false);
 
     useEffect(() => {
         loadVideos();
@@ -12,7 +14,9 @@ let VideoList = () => {
 
     const loadVideos = async () => {
         const videos = await window.api.send('getVideos', game);
+        const hasBatch = await BatchAPI.hasBatch();
         setVideos(videos);
+        setHasBatch(hasBatch);
     };
 
     const deleteFile = async (id, game, isActive) => {
@@ -31,6 +35,11 @@ let VideoList = () => {
             <Link to={`/batch/${game}`}>
                 <button>New Batch</button>
             </Link>
+            {hasBatch ? (
+                <Link to={`/create/${game}?batch=true`}>
+                    <button>Continue Batch</button>
+                </Link>
+            ) : null}
             <h3>Clips</h3>
             {videos.filter((video) => video._id.startsWith('_')).length > 0 ? (
                 <table style={{ margin: 'auto' }}>
