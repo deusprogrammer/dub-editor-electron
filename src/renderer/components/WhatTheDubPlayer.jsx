@@ -25,17 +25,14 @@ export default (props) => {
     });
 
     useEffect(() => {
-        console.log('Video position changed');
         videoElement.current.currentTime = props.videoPosition;
         isTalking = false;
     }, [props.videoPosition]);
 
     useEffect(() => {
         if (props.isPlaying) {
-            console.log('Play');
             videoElement.current.play();
         } else {
-            console.log('Pause');
             videoElement.current.pause();
         }
     }, [props.isPlaying]);
@@ -88,7 +85,6 @@ export default (props) => {
         });
 
         if (index !== currentIndex) {
-            console.log('INDEX CHANGED: ' + index);
             if (isTalking) {
                 video.pause();
                 return;

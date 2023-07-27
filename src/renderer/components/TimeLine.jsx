@@ -137,7 +137,6 @@ export default ({
                 step={1}
                 max={videoLengthMs}
                 onChange={(e) => {
-                    console.log('OFFSET: ' + offset);
                     onSliderPositionChange(parseFloat(e.target.value) + offset);
                 }}
             />

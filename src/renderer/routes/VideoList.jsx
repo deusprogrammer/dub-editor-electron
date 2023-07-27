@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import BatchAPI from 'renderer/api/BatchAPI';
+import ConfigAPI from 'renderer/api/ConfigAPI';
 
 let VideoList = () => {
     const { game } = useParams();
     const [videos, setVideos] = useState([]);
     const [batchCount, setBatchCount] = useState(0);
+    const [config, setConfig] = useState({});
 
     useEffect(() => {
         loadVideos();
@@ -15,8 +17,10 @@ let VideoList = () => {
     const loadVideos = async () => {
         const videos = await window.api.send('getVideos', game);
         const hasBatch = await BatchAPI.hasBatch();
+        const config = await ConfigAPI.getConfig();
         setVideos(videos);
         setBatchCount(hasBatch);
+        setConfig(config);
     };
 
     const deleteFile = async (id, game, isActive) => {
@@ -32,13 +36,17 @@ let VideoList = () => {
             <Link to={`/create/${game}`}>
                 <button>New Clip</button>
             </Link>
-            <Link to={`/batch/${game}`}>
-                <button>New Batch</button>
-            </Link>
-            {batchCount > 0 ? (
-                <Link to={`/create/${game}?batch=true`}>
-                    <button>Continue Batch ({batchCount})</button>
-                </Link>
+            {config.editor === 'advanced' ? (
+                <>
+                    <Link to={`/batch/${game}`}>
+                        <button>New Batch</button>
+                    </Link>
+                    {batchCount > 0 ? (
+                        <Link to={`/create/${game}?batch=true`}>
+                            <button>Continue Batch ({batchCount})</button>
+                        </Link>
+                    ) : null}
+                </>
             ) : null}
             <h3>Clips</h3>
             {videos.filter((video) => video._id.startsWith('_')).length > 0 ? (

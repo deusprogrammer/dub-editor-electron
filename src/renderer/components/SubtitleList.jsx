@@ -42,8 +42,6 @@ export default ({
         setCollections(collections);
     };
 
-    console.log('CURRENT SUB: ' + currentSub);
-
     let currentSubObject = subs[currentSub];
     return (
         <div className="subtitle-window">

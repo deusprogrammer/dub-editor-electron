@@ -13,8 +13,6 @@ export let convertTimestampToSeconds = (timestamp) => {
     let regex = /(\d\d):(\d\d):(\d\d),(\d\d\d)/;
     let match = regex.exec(timestamp);
 
-    console.log('TIMESTAMP: ' + timestamp);
-
     let h = parseInt(match[1]);
     let m = parseInt(match[2]);
     let s = parseInt(match[3]);
@@ -73,7 +71,6 @@ export let convertSrtToSubtitles = (srtBase64) => {
     let srt = atob(srtBase64);
     let n = 0;
     srt.split('\n').forEach((line) => {
-        console.log('LINE: ' + line);
         switch (n++) {
             case 0:
                 break;
@@ -85,7 +82,6 @@ export let convertSrtToSubtitles = (srtBase64) => {
 
                 let startTime = match[1];
                 let endTime = match[2];
-                console.log(startTime + ' => ' + endTime);
                 subtitle.startTime =
                     convertTimestampToSeconds(startTime) * 1000;
                 subtitle.endTime = convertTimestampToSeconds(endTime) * 1000;
@@ -132,8 +128,6 @@ export let convertSubtitlesToWebVtt = (subtitles, substitution, offset = 0) => {
             })
             .join('\n\n');
 
-    console.log(webvtt);
-
     return webvtt;
 };
 
@@ -152,7 +146,6 @@ export let addVideo = async (
     type,
     isBatch
 ) => {
-    console.log('SUBS: ' + convertSubtitlesToSrt(subtitles, type));
     if (isBatch) {
         return await window.api.send('processBatchClip', {
             subtitles: convertSubtitlesToSrt(subtitles, type),

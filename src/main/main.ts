@@ -169,9 +169,6 @@ const importZip = async (filePath: string, game: string) => {
         '/'
     )}${subtitleDirectoryStack.join('/')}`;
 
-    console.log(`${sourceVideoDirectory} => ${targetVideoDirectory}`);
-    console.log(`${sourceSubtitlesDirectory} => ${targetSubtitlesDirectory}`);
-
     Object.values(entries).forEach((entry: any) => console.log(entry.name));
 
     // Try with standard directory names
@@ -503,7 +500,7 @@ const installExtensions = async () => {
             extensions.map((name) => installer[name]),
             forceDownload
         )
-        .catch(console.log);
+        .catch(console.error);
 };
 
 const createWindow = async () => {
@@ -585,13 +582,12 @@ app.whenReady()
             if (mainWindow === null) createWindow();
         });
     })
-    .catch(console.log);
+    .catch(console.error);
 
 // Bridged functionality
 
 ipcMain.handle('fileExists', (event, filePath) => {
     const exists = fs.existsSync(filePath);
-    console.log(`${filePath} exists?  ${exists}`);
     return exists;
 });
 
@@ -614,8 +610,6 @@ ipcMain.handle('clipExists', (event, { title, clipNumber, game }) => {
     const exists =
         fs.existsSync(videoFilePath) ||
         fs.existsSync(videoFilePath + '.disabled');
-
-    console.log(`${videoFilePath} exists? ${exists}`);
 
     return exists;
 });
@@ -764,7 +758,7 @@ ipcMain.handle('getVideos', (event, game) => {
 });
 
 ipcMain.handle('getVideo', (event, { id, game }) => {
-    console.log('Opening: ' + id + ' from game ' + game);
+    console.log('OPENING: ' + id + ' from game ' + game);
 
     let directory = null;
     if (game === 'rifftrax') {
