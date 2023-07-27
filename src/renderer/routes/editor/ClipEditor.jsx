@@ -27,14 +27,22 @@ export default ({ game }) => {
             <h2>Which Editor would you like to Use?</h2>
             <button
                 onClick={() => {
-                    navigate(`/create/simple/${game}`);
+                    navigate(
+                        `/create/simple/${game}?batch=${searchParams.get(
+                            'batch'
+                        )}`
+                    );
                 }}
             >
                 Simple
             </button>
             <button
                 onClick={() => {
-                    navigate(`/create/advanced/${game}`);
+                    navigate(
+                        `/create/advanced/${game}?batch=${searchParams.get(
+                            'batch'
+                        )}`
+                    );
                 }}
             >
                 Advanced
