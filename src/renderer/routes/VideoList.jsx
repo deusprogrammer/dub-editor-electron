@@ -36,7 +36,7 @@ let VideoList = () => {
                 <button>New Batch</button>
             </Link>
             {batchCount > 0 ? (
-                <Link to={`/create/advanced/${game}?batch=true`}>
+                <Link to={`/create/${game}?batch=true`}>
                     <button>Continue Batch ({batchCount})</button>
                 </Link>
             ) : null}

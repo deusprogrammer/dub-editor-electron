@@ -208,7 +208,7 @@ export default ({
                                     endTime,
                                 });
                                 setCurrentRow(rowIndex);
-                                onSliderPositionChange(startTime - offset);
+                                onSliderPositionChange(startTime + offset);
                             }}
                         >
                             {timelineRow.map((sub) => {
@@ -251,7 +251,7 @@ export default ({
                                                     startTime,
                                                 });
                                                 onSliderPositionChange(
-                                                    startTime - offset
+                                                    startTime + offset
                                                 );
                                                 onSubSelect(sub.index);
                                             }}
@@ -327,7 +327,7 @@ export default ({
                                                     endTime,
                                                 });
                                                 onSliderPositionChange(
-                                                    startTime - offset
+                                                    startTime + offset
                                                 );
                                                 onSubSelect(sub.index);
                                             }}
@@ -391,7 +391,7 @@ export default ({
                                                     endTime,
                                                 });
                                                 onSliderPositionChange(
-                                                    endTime - offset
+                                                    endTime + offset
                                                 );
                                                 onSubSelect(sub.index);
                                             }}

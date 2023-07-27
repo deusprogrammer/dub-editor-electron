@@ -200,7 +200,7 @@ let ClipCutter = () => {
                                         });
                                     }
                                 );
-                                navigate(`/create/advanced/${game}?batch=true`);
+                                navigate(`/create/${game}?batch=true`);
                             }}
                         />
                     </div>
@@ -222,7 +222,7 @@ let ClipCutter = () => {
             ) : (
                 <div>
                     <p>
-                        Please choose the video you wish to make clips out of.
+                        Please choose the video you wish to create clips from.
                     </p>
                     <input type="file" accept=".mp4" onChange={onFileOpen} />
                     <Link to="/">
