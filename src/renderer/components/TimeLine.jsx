@@ -80,7 +80,10 @@ export default ({
                 <button
                     onClick={() => {
                         onSliderPositionChange(
-                            Math.max(0, currentPosition - 1)
+                            Math.max(
+                                0,
+                                currentSliderPosition + offset - 1000 / 60
+                            )
                         );
                     }}
                 >
@@ -107,7 +110,11 @@ export default ({
                 )}
                 <button
                     onClick={() => {
-                        onSliderPositionChange(currentPosition + 1);
+                        if (currentSliderPosition < videoLengthMs) {
+                            onSliderPositionChange(
+                                currentSliderPosition + offset + 1000 / 60
+                            );
+                        }
                     }}
                 >
                     &gt;

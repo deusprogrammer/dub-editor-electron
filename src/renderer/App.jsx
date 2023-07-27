@@ -1,4 +1,3 @@
-import './App.css';
 import React, { useEffect, useState } from 'react';
 import {
     Routes,
@@ -17,17 +16,25 @@ import Launcher from './routes/Launcher';
 import CollectionManager from './routes/CollectionManager';
 import Config from './routes/Config';
 import About from './routes/About';
-
-import 'react-toastify/dist/ReactToastify.css';
 import ClipEditor from './routes/editor/ClipEditor';
 import ClipCutter from './routes/editor/ClipCutter';
 import SimpleEditor from './routes/editor/SimpleEditor';
+import Interstitial from './components/interstitial/Interstitial';
+
+import { useAtom } from 'jotai';
+import { interstitialAtom } from './atoms/interstitial.atom';
+
+import './App.css';
+import 'react-toastify/dist/ReactToastify.css';
 
 const VERSION = 'v1.2.3-beta';
 
 let App = (props) => {
     const navigate = useNavigate();
     const location = useLocation();
+
+    const [interstitialState, setInterstitialState] = useAtom(interstitialAtom);
+
     const [config, setConfig] = useState({});
     const [game, setGame] = useState('rifftrax');
     useEffect(() => {
@@ -71,6 +78,9 @@ let App = (props) => {
     return (
         <div className="App">
             <ToastContainer />
+            <Interstitial isOpen={interstitialState.isOpen}>
+                {interstitialState.message}
+            </Interstitial>
             {location.pathname !== `/create/${game}` ? (
                 <div>
                     <h1>Dub Editor</h1>

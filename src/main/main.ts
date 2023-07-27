@@ -90,7 +90,7 @@ const trimAndWriteVideo = async (outputFilePath: string, startTime: number, endT
 }
 
 const createClipName = (title: string, clipNumber: number) => {
-    return title.replace(' ', '_') + `-Clip${`${clipNumber}`.padStart(3, '0')}`;
+    return '_' + title.replace(' ', '_') + `-Clip${`${clipNumber}`.padStart(3, '0')}`;
 };
 
 const importZip = async (filePath: string, game: string) => {
@@ -599,7 +599,7 @@ ipcMain.handle('clipExists', (event, { title, clipNumber, game }) => {
         '~',
         HOME
     );
-    const videoFilePath = `${clipsDirectory}/_${baseFileName}.mp4`;
+    const videoFilePath = `${clipsDirectory}/${baseFileName}.mp4`;
     const exists =
         fs.existsSync(videoFilePath) ||
         fs.existsSync(videoFilePath + '.disabled');
@@ -682,8 +682,8 @@ ipcMain.handle('processBatchClip', async (event, {subtitles, title, clipNumber, 
             `${directory}/StreamingAssets/VideoClips`.replace('~', HOME);
         const subsDirectory: string =
             `${directory}/StreamingAssets/Subtitles`.replace('~', HOME);
-        const videoFilePath: string = `${clipsDirectory}/_${baseFileName}.mp4`;
-        const subFilePath: string = `${subsDirectory}/_${baseFileName}.srt`;
+        const videoFilePath: string = `${clipsDirectory}/${baseFileName}.mp4`;
+        const subFilePath: string = `${subsDirectory}/${baseFileName}.srt`;
 
         // Write video clip
         await trimAndWriteVideo(videoFilePath, clip.startTime, clip.endTime);
@@ -810,8 +810,8 @@ ipcMain.handle(
             '~',
             HOME
         );
-        const videoFilePath = `${clipsDirectory}/_${baseFileName}.mp4`;
-        const subFilePath = `${subsDirectory}/_${baseFileName}.srt`;
+        const videoFilePath = `${clipsDirectory}/${baseFileName}.mp4`;
+        const subFilePath = `${subsDirectory}/${baseFileName}.srt`;
 
         console.log('SAVING TO ' + videoFilePath + '\n' + subFilePath);
 

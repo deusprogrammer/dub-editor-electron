@@ -13,9 +13,14 @@ import CollectionAPI from '../../api/CollectionAPI';
 import BatchAPI from '../../api/BatchAPI';
 
 import ClipList from 'renderer/components/ClipList';
+import { interstitialAtom } from 'renderer/atoms/interstitial.atom';
+import { handleInterstitial } from 'renderer/components/interstitial/Interstitial';
+import { useAtom } from 'jotai';
 
-let AdvancedEditor = () => {
+let ClipCutter = () => {
     const params = useParams();
+    const [, setInterstitialState] = useAtom(interstitialAtom);
+
     const navigate = useNavigate();
 
     const [windowSize, setWindowSize] = useState({
@@ -50,9 +55,18 @@ let AdvancedEditor = () => {
     let onFileOpen = (e) => {
         let f = e.target.files[0];
         let fr = new FileReader();
-        fr.onload = () => {
-            setVideoSource(fr.result);
-        };
+
+        handleInterstitial(
+            new Promise((resolve, reject) => {
+                fr.onload = () => {
+                    setVideoSource(fr.result);
+                    resolve();
+                };
+            }),
+            (isOpen) => {
+                setInterstitialState({ isOpen, message: 'Loading Video...' });
+            }
+        );
 
         fr.readAsDataURL(f);
     };
@@ -173,10 +187,18 @@ let AdvancedEditor = () => {
                             onClipsChange={clipChangeHandler}
                             onSelectClip={setCurrentClip}
                             onProcess={async (title, clips) => {
-                                await BatchAPI.storeBatch(
-                                    clips,
-                                    videoSource,
-                                    title
+                                await handleInterstitial(
+                                    BatchAPI.storeBatch(
+                                        clips,
+                                        videoSource,
+                                        title
+                                    ),
+                                    (isOpen) => {
+                                        setInterstitialState({
+                                            isOpen,
+                                            message: 'Processing batch',
+                                        });
+                                    }
                                 );
                                 navigate(`/create/${game}?batch=true`);
                             }}
@@ -214,4 +236,4 @@ let AdvancedEditor = () => {
     );
 };
 
-export default AdvancedEditor;
+export default ClipCutter;

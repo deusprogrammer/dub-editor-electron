@@ -11,9 +11,14 @@ import TimeLine from '../../components/TimeLine';
 import SubtitleList from '../../components/SubtitleList';
 import CollectionAPI from '../../api/CollectionAPI';
 import BatchAPI from 'renderer/api/BatchAPI';
+import { useAtom } from 'jotai';
+import { interstitialAtom } from 'renderer/atoms/interstitial.atom';
+import { handleInterstitial } from 'renderer/components/interstitial/Interstitial';
 
 let AdvancedEditor = () => {
     const [searchParams] = useSearchParams();
+    const [, setInterstitialState] = useAtom(interstitialAtom);
+
     const params = useParams();
     const navigate = useNavigate();
 
@@ -24,6 +29,8 @@ let AdvancedEditor = () => {
 
     const [batchClip, setBatchClip] = useState(null);
     const [offset, setOffset] = useState(0);
+    const [startTime, setStartTime] = useState(0);
+    const [endTime, setEndTime] = useState(0);
 
     const [error, setError] = useState(null);
     const [videoSource, setVideoSource] = useState('');
@@ -59,11 +66,21 @@ let AdvancedEditor = () => {
     }, []);
 
     const getNextBatch = async () => {
-        let batchClip = await BatchAPI.nextBatchClip();
+        let batchClip = await handleInterstitial(
+            BatchAPI.nextBatchClip(),
+            (isOpen) => {
+                setInterstitialState({
+                    isOpen,
+                    message: 'Getting next clip...',
+                });
+            }
+        );
         let { clip, video, title, clipNumber } = batchClip;
         setVideoSource(video);
         setVideoLength((clip.endTime - clip.startTime) / 1000);
         setBatchClip(batchClip);
+        setStartTime(clip.startTime);
+        setEndTime(clip.endTime);
         setOffset(clip.startTime);
         setCurrentSliderPosition(clip.startTime);
         setCurrentPosition(clip.startTime / 1000);
@@ -227,7 +244,12 @@ let AdvancedEditor = () => {
                     <div className="top-pane">
                         <WhatTheDubPlayer
                             videoSource={videoSource}
-                            isPlaying={isPlaying}
+                            isPlaying={
+                                isPlaying &&
+                                currentSliderPosition >=
+                                    batchClip.clip.startTime &&
+                                currentSliderPosition <= batchClip.clip.endTime
+                            }
                             videoPosition={currentPosition}
                             subs={subs}
                             offset={offset}
@@ -241,7 +263,11 @@ let AdvancedEditor = () => {
                             onVideoPositionChange={(position) => {
                                 setCurrentSliderPosition(position * 1000);
                             }}
+                            onIndexChange={setCurrentSub}
                             onVideoLoaded={(video) => {
+                                if (!isBatch) {
+                                    setEndTime(video.duration * 1000);
+                                }
                                 if (!videoLength) {
                                     setVideoLength(video.duration);
                                 }
@@ -261,7 +287,16 @@ let AdvancedEditor = () => {
                             onSubsChange={subChangeHandler}
                             onSelectSub={setCurrentSub}
                             onSave={(title, number, collectionId) => {
-                                addVideoToGame(title, number, collectionId);
+                                handleInterstitial(
+                                    addVideoToGame(title, number, collectionId),
+                                    (isOpen) => {
+                                        setInterstitialState({
+                                            isOpen,
+                                            message:
+                                                'Creating clip and adding subs...',
+                                        });
+                                    }
+                                );
                             }}
                         />
                     </div>
