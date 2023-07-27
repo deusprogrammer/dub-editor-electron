@@ -10,7 +10,6 @@ let VideoView = (props) => {
     useEffect(() => {
         (async () => {
             const video = await window.api.send('getVideo', params);
-            convertSrtToSubtitles(video.srtBase64);
             setVideoDetails(video);
         })();
     }, []);

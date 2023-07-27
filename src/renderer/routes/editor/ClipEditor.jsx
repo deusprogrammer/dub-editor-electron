@@ -16,7 +16,6 @@ export default ({ game }) => {
     };
 
     if (['simple', 'advanced'].includes(editor)) {
-        console.log('IS BATCH: ' + searchParams.get('batch'));
         navigate(
             `/create/${editor}/${game}?batch=${searchParams.get('batch')}`
         );

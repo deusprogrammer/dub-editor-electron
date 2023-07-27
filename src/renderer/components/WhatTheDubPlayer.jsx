@@ -10,8 +10,6 @@ export default (props) => {
     const [muted, setMuted] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    console.log('VIDEO OFFSET: ' + props.offset);
-
     const videoElement = React.createRef();
 
     const maleVoice = window.speechSynthesis.getVoices().find((element) => {

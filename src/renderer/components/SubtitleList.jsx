@@ -1,6 +1,6 @@
 import CollectionAPI from 'renderer/api/CollectionAPI';
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 let convertMillisecondsToTimestamp = (milliseconds) => {
     let seconds = milliseconds / 1000;
@@ -18,6 +18,8 @@ let convertMillisecondsToTimestamp = (milliseconds) => {
 
 export default ({
     subs,
+    clipNumberOverride,
+    titleOverride,
     currentSub,
     currentSliderPosition,
     game,
@@ -26,8 +28,8 @@ export default ({
     onRemoveSub,
     onSave,
 }) => {
-    const [clipTitle, setClipTitle] = useState('');
-    const [clipNumber, setClipNumber] = useState(1);
+    const [clipTitle, setClipTitle] = useState(titleOverride || '');
+    const [clipNumber, setClipNumber] = useState(clipNumberOverride || 1);
     const [collections, setCollections] = useState([]);
     const [selectedCollection, setSelectedCollection] = useState('_none');
 
@@ -115,6 +117,13 @@ export default ({
                             [{sub.index}] :{' '}
                             {convertMillisecondsToTimestamp(sub.startTime)} -{' '}
                             {convertMillisecondsToTimestamp(sub.endTime)}
+                            <button
+                                onClick={() => {
+                                    onSelectSub(sub.index);
+                                }}
+                            >
+                                Select
+                            </button>
                             <button
                                 onClick={() => {
                                     onSubsChange('remove', sub);

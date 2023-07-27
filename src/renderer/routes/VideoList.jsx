@@ -6,7 +6,7 @@ import BatchAPI from 'renderer/api/BatchAPI';
 let VideoList = () => {
     const { game } = useParams();
     const [videos, setVideos] = useState([]);
-    const [hasBatch, setHasBatch] = useState(false);
+    const [batchCount, setBatchCount] = useState(0);
 
     useEffect(() => {
         loadVideos();
@@ -16,7 +16,7 @@ let VideoList = () => {
         const videos = await window.api.send('getVideos', game);
         const hasBatch = await BatchAPI.hasBatch();
         setVideos(videos);
-        setHasBatch(hasBatch);
+        setBatchCount(hasBatch);
     };
 
     const deleteFile = async (id, game, isActive) => {
@@ -35,9 +35,9 @@ let VideoList = () => {
             <Link to={`/batch/${game}`}>
                 <button>New Batch</button>
             </Link>
-            {hasBatch ? (
+            {batchCount > 0 ? (
                 <Link to={`/create/${game}?batch=true`}>
-                    <button>Continue Batch</button>
+                    <button>Continue Batch ({batchCount})</button>
                 </Link>
             ) : null}
             <h3>Clips</h3>

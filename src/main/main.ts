@@ -20,6 +20,10 @@ import defaultConfig from './defaultConfig';
 import JSZip from 'jszip';
 
 const StreamZip = require('node-stream-zip');
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+const ffmpeg = require('fluent-ffmpeg');
+ffmpeg.setFfmpegPath(ffmpegPath);
+
 
 const HOME: string =
     process.platform === 'darwin'
@@ -28,6 +32,7 @@ const HOME: string =
 const CONFIG_FILE: string = `${HOME}/.dub-editor-config.json`;
 const COLLECTIONS_FILE: string = `${HOME}/.dub-editor-collections.json`;
 const BATCH_CACHE_FILE: string = `${HOME}/.dub-editor-batch-cache.json`;
+const BATCH_VIDEO_TEMP_FILE: string = `${HOME}/dub-editor-tmp.mp4`;
 
 export default class AppUpdater {
     constructor() {
@@ -38,10 +43,51 @@ export default class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
-let batchCache = {
+let batchCache : any = {
     clips: [],
     video: null,
 };
+
+const convertMillisecondsToTimestamp = (milliseconds: number) => {
+    let seconds = milliseconds / 1000;
+    let h = Math.floor(seconds / 3600);
+    let m = Math.floor((seconds % 3600) / 60);
+    let s = Math.floor(seconds % 60);
+    let ms = Math.floor((seconds - Math.trunc(seconds)) * 1000);
+
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}.${ms.toString().padStart(3, "0")}`;
+}
+
+const processVideo = (inputFilePath: string, outputFilePath: string, startTime: number, duration: number) => {
+    return new Promise((resolve, reject) => {
+        console.log("PROCESSING " + inputFilePath);
+        console.log("STORING TO " + outputFilePath);
+        // Process video
+        let ts = convertMillisecondsToTimestamp(startTime);
+        ffmpeg(inputFilePath)
+            .videoCodec("libx264")
+            .setStartTime(ts)
+            .setDuration(duration / 1000)
+            .output(outputFilePath)
+            .on('end', function(err: any) {
+                if(!err) { 
+                    resolve(0);
+                }
+            })
+            .on('error', function(err: any){
+                reject(err);
+            }).run();
+    });
+}
+
+const trimAndWriteVideo = async (outputFilePath: string, startTime: number, endTime: number) => {
+    try {
+        await processVideo(BATCH_VIDEO_TEMP_FILE, outputFilePath, startTime, endTime - startTime);
+    } catch (err) {
+        console.error("Unable to trim video: " + err);
+        throw new Error("Unable to trim video: " + err);
+    }
+}
 
 const createClipName = (title: string, clipNumber: number) => {
     return title.replace(' ', '_') + `-Clip${`${clipNumber}`.padStart(3, '0')}`;
@@ -574,39 +620,89 @@ ipcMain.handle('getConfig', () => {
     return config;
 });
 
-ipcMain.handle('storeBatch', (event, { clips, video }) => {
+ipcMain.handle('storeBatch', async (event, { clips, video, title }) => {
     batchCache = {
+        title,
+        clipNumber: 1,
         clips,
         video,
     };
+
+    // Write cache file
     fs.writeFileSync(
         BATCH_CACHE_FILE,
         Buffer.from(JSON.stringify(batchCache, null, 5))
     );
+
+    // Write temporary video file
+    let videoByteStream : any = batchCache.video;
+    videoByteStream = videoByteStream.substring(videoByteStream.indexOf(','));
+    let buffer = Buffer.from(videoByteStream, "base64");
+    try {
+        await fs.writeFileSync(BATCH_VIDEO_TEMP_FILE, buffer);
+    } catch (err) {
+        throw new Error("Unable to trim video: " + err);
+    }
 });
 
 ipcMain.handle('hasBatch', (event) => {
-    return batchCache.video;
+    return batchCache.clips.length;
 });
 
 ipcMain.handle('nextBatchClip', (event) => {
     const {startTime, endTime} = batchCache.clips[0];
     return {
+        title: batchCache.title,
+        clipNumber: batchCache.clipNumber,
         clip: batchCache.clips[0],
         video: batchCache.video + `#t=${startTime/1000},${endTime/1000}`
     };
 });
 
-ipcMain.handle('popNextBatchClip', (event) => {
-    batchCache.clips.shift();
-    fs.writeFileSync(
-        BATCH_CACHE_FILE,
-        Buffer.from(JSON.stringify(batchCache, null, 5))
+ipcMain.handle('processBatchClip', async (event, {subtitles, title, clipNumber, game}) => {
+    console.log(
+        `STORING ${title}-${clipNumber} for game ${game} with subtitles ${subtitles}`
     );
-    return {
-        clip: batchCache.clips[0],
-        video: batchCache.video,
-    };
+
+    let clip : any = batchCache.clips[0];
+
+    if (clip) {
+        let directory = null;
+        if (game === 'rifftrax') {
+            directory = config.rifftraxDirectory;
+        } else if (game === 'whatthedub') {
+            directory = config.whatTheDubDirectory;
+        } else {
+            return;
+        }
+
+        let baseFileName = createClipName(title, clipNumber);
+    
+        const clipsDirectory: string =
+            `${directory}/StreamingAssets/VideoClips`.replace('~', HOME);
+        const subsDirectory: string =
+            `${directory}/StreamingAssets/Subtitles`.replace('~', HOME);
+        const videoFilePath: string = `${clipsDirectory}/_${baseFileName}.mp4`;
+        const subFilePath: string = `${subsDirectory}/_${baseFileName}.srt`;
+
+        // Write video clip
+        await trimAndWriteVideo(videoFilePath, clip.startTime, clip.endTime);
+
+        // Write matching subtitles
+        fs.writeFileSync(subFilePath, subtitles);
+
+        // Remove the clip from batch on completion
+        batchCache.clips.shift();
+        batchCache.clipNumber++;
+        fs.writeFileSync(
+            BATCH_CACHE_FILE,
+            Buffer.from(JSON.stringify(batchCache, null, 5))
+        );
+
+        return baseFileName;
+    } else {
+        throw new Error("No batches left to process");
+    }
 });
 
 ipcMain.handle('clearBatchCache', (event) => {

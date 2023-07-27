@@ -172,8 +172,13 @@ let AdvancedEditor = () => {
                             currentSliderPosition={currentSliderPosition}
                             onClipsChange={clipChangeHandler}
                             onSelectClip={setCurrentClip}
-                            onProcess={(title, clips) => {
-                                BatchAPI.storeBatch(clips, videoSource);
+                            onProcess={async (title, clips) => {
+                                await BatchAPI.storeBatch(
+                                    clips,
+                                    videoSource,
+                                    title
+                                );
+                                navigate(`/create/${game}?batch=true`);
                             }}
                         />
                     </div>

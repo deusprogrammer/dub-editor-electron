@@ -86,8 +86,9 @@ export let convertSrtToSubtitles = (srtBase64) => {
                 let startTime = match[1];
                 let endTime = match[2];
                 console.log(startTime + ' => ' + endTime);
-                subtitle.startTime = convertTimestampToSeconds(startTime);
-                subtitle.endTime = convertTimestampToSeconds(endTime);
+                subtitle.startTime =
+                    convertTimestampToSeconds(startTime) * 1000;
+                subtitle.endTime = convertTimestampToSeconds(endTime) * 1000;
                 break;
             case 2:
                 subtitle.text = line;
@@ -131,6 +132,8 @@ export let convertSubtitlesToWebVtt = (subtitles, substitution, offset = 0) => {
             })
             .join('\n\n');
 
+    console.log(webvtt);
+
     return webvtt;
 };
 
@@ -146,8 +149,18 @@ export let addVideo = async (
     subtitles,
     title,
     clipNumber = 1,
-    type
+    type,
+    isBatch
 ) => {
+    console.log('SUBS: ' + convertSubtitlesToSrt(subtitles, type));
+    if (isBatch) {
+        return await window.api.send('processBatchClip', {
+            subtitles: convertSubtitlesToSrt(subtitles, type),
+            title,
+            clipNumber,
+            game: type,
+        });
+    }
     return await window.api.send('storeVideo', {
         base64ByteStream,
         subtitles: convertSubtitlesToSrt(subtitles, type),

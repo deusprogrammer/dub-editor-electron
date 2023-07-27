@@ -36,6 +36,11 @@ export default ({
     rowCount,
 }) => {
     const [currentRow, setCurrentRow] = useState(0);
+
+    if (!offset) {
+        offset = 0;
+    }
+
     let videoLengthMs = videoLength * 1000;
     let defaultClipSize = videoLengthMs * 0.1;
     let currentSliderPosition = actualSliderPosition - offset;

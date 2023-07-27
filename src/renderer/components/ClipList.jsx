@@ -70,6 +70,13 @@ export default ({
                             {convertMillisecondsToTimestamp(clip.endTime)}
                             <button
                                 onClick={() => {
+                                    onSelectClip(clip.index);
+                                }}
+                            >
+                                Select
+                            </button>
+                            <button
+                                onClick={() => {
                                     onClipsChange('remove', clip);
                                     onSelectClip(null);
                                 }}

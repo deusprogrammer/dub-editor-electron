@@ -59,10 +59,11 @@ let AdvancedEditor = () => {
     }, []);
 
     const getNextBatch = async () => {
-        let { clip, video } = await BatchAPI.nextBatchClip();
+        let batchClip = await BatchAPI.nextBatchClip();
+        let { clip, video, title, clipNumber } = batchClip;
         setVideoSource(video);
         setVideoLength((clip.endTime - clip.startTime) / 1000);
-        setBatchClip(clip);
+        setBatchClip(batchClip);
         setOffset(clip.startTime);
         setCurrentSliderPosition(clip.startTime);
         setCurrentPosition(clip.startTime / 1000);
@@ -118,7 +119,8 @@ let AdvancedEditor = () => {
                 subs,
                 videoName,
                 clipNumber,
-                params.type
+                params.type,
+                isBatch
             );
             if (!collectionId.startsWith('_')) {
                 await CollectionAPI.addToCollection(
@@ -130,7 +132,16 @@ let AdvancedEditor = () => {
             setButtonsDisabled(false);
 
             toast(`Clip added successfully!`, { type: 'info' });
-            navigate('/');
+            if (!isBatch) {
+                navigate('/');
+            } else {
+                let hasBatch = await BatchAPI.hasBatch();
+                if (hasBatch > 0) {
+                    navigate(`/create/${game}?batch=true`);
+                } else {
+                    navigate('/');
+                }
+            }
         } catch (error) {
             console.error(error);
             toast(`Clip add failed!`, { type: 'error' });
@@ -242,6 +253,8 @@ let AdvancedEditor = () => {
                             currentSliderPosition={
                                 currentSliderPosition - offset
                             }
+                            clipNumberOverride={batchClip?.clipNumber}
+                            titleOverride={batchClip?.title}
                             currentSub={currentSub}
                             offset={offset}
                             subs={subs}
