@@ -160,7 +160,10 @@
         "appId": "com.trinary.dub-editor",
         "asar": true,
         "asarUnpack": [
-            "**\\*.{node,dll}"
+            "**\\*.{node,dll}",
+            "**/ffmpeg-static/",
+            "**/ffmpeg-static/index.js",
+            "**/ffmpeg-static/package.json"
         ],
         "files": [
             "dist",
