@@ -24,10 +24,16 @@ const StreamZip = require('node-stream-zip');
 const ffmpeg = require('fluent-ffmpeg');
 
 // Fuck ASAR, it's a piece of shit with shitty documentation and it doesn't work the same way in every OS.
-const ffmpegPath = path.join(__dirname.substring(0, __dirname.indexOf('/app.asar')), '/node_modules/ffmpeg-static/ffmpeg');
+let ffmpegPath = path.join(__dirname.substring(0, __dirname.indexOf('app.asar')), 'node_modules/ffmpeg-static/ffmpeg');
+
+if (process.platform === "win32") {
+    ffmpegPath += ".exe";
+}
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
+console.log("HOME DIRECTORY: " + __dirname);
+console.log("POOPIES: " + __dirname.substring(0, __dirname.indexOf('/app.asar')));
 console.log("FFMPEG PATH: " +ffmpegPath);
 
 

@@ -217,7 +217,7 @@
         },
         "extraResources": [
             "./assets/**",
-            "./node_modules/ffmpeg-static/ffmpeg"
+            "./node_modules/ffmpeg-static/*"
         ],
         "publish": {
             "provider": "github",
