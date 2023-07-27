@@ -1,12 +1,12 @@
 {
-    "name": "electron-react-boilerplate",
-    "version": "4.6.0",
-    "description": "A foundation for scalable desktop apps",
+    "name": "dub-editor-electron",
+    "version": "1.3.0-alpha",
+    "description": "A dub editor for What the Dub and Rifftrax games by Wide Right Studios",
     "license": "MIT",
     "author": {
-        "name": "Electron React Boilerplate Maintainers",
-        "email": "electronreactboilerplate@gmail.com",
-        "url": "https://github.com/electron-react-boilerplate"
+        "name": "Michael C. Main",
+        "email": "deusprogrammer@gmail.com",
+        "url": "https://deusprogrammer.com/util/wtd-tool"
     },
     "main": "./dist/main/main.js",
     "scripts": {

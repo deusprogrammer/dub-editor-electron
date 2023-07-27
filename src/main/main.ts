@@ -20,9 +20,15 @@ import defaultConfig from './defaultConfig';
 import JSZip from 'jszip';
 
 const StreamZip = require('node-stream-zip');
-const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+
 const ffmpeg = require('fluent-ffmpeg');
+
+// Fuck ASAR, it's a piece of shit with shitty documentation and it doesn't work the same way in every OS.
+const ffmpegPath = path.join(__dirname.substring(0, __dirname.indexOf('/app.asar')), '/node_modules/ffmpeg-static/ffmpeg');
+
 ffmpeg.setFfmpegPath(ffmpegPath);
+
+console.log("FFMPEG PATH: " +ffmpegPath);
 
 
 const HOME: string =
