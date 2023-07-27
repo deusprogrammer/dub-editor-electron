@@ -321,7 +321,8 @@ let AdvancedEditor = () => {
                     <p>
                         Please choose the video you wish to add subtitles to.
                         Note that the file needs to already be trimmed to the
-                        length you want it.
+                        length you want it. However you can use batch mode if
+                        you want to cut up your video into smaller pieces.
                     </p>
                     <input type="file" accept=".mp4" onChange={onFileOpen} />
                     <Link to="/">

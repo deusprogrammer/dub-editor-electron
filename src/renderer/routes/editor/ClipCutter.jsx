@@ -200,7 +200,7 @@ let ClipCutter = () => {
                                         });
                                     }
                                 );
-                                navigate(`/create/${game}?batch=true`);
+                                navigate(`/create/advanced/${game}?batch=true`);
                             }}
                         />
                     </div>
@@ -222,9 +222,7 @@ let ClipCutter = () => {
             ) : (
                 <div>
                     <p>
-                        Please choose the video you wish to add subtitles to.
-                        Note that the file needs to already be trimmed to the
-                        length you want it.
+                        Please choose the video you wish to make clips out of.
                     </p>
                     <input type="file" accept=".mp4" onChange={onFileOpen} />
                     <Link to="/">
