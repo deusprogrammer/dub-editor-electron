@@ -33,7 +33,6 @@ if (process.platform === "win32") {
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 console.log("HOME DIRECTORY: " + __dirname);
-console.log("POOPIES: " + __dirname.substring(0, __dirname.indexOf('/app.asar')));
 console.log("FFMPEG PATH: " +ffmpegPath);
 
 
