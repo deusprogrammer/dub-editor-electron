@@ -77,7 +77,8 @@ let AdvancedEditor = () => {
             }
         );
         let { clip, video, title, clipNumber } = batchClip;
-        setVideoSource("app://batch.tmp.mp4");
+        console.log("DOG WATER: " + video);
+        setVideoSource(video);
         setVideoLength((clip.endTime - clip.startTime) / 1000);
         setBatchClip(batchClip);
         setStartTime(clip.startTime);
@@ -87,23 +88,9 @@ let AdvancedEditor = () => {
         setCurrentPosition(clip.startTime / 1000);
     };
 
-    let onFileOpen = (e) => {
-        let f = e.target.files[0];
-        let fr = new FileReader();
-        handleInterstitial(
-            new Promise((resolve, reject) => {
-                fr.onload = async () => {
-                    let url = await VideoAPI.storeTempVideo(fr.result, "clip");
-                    console.log("URL: " + url);
-                    setVideoSource(url);
-                    resolve();
-                };
-        }),
-        (isOpen) => {
-            setInterstitialState({ isOpen, message: 'Loading Video...' });
-        })
-
-        fr.readAsArrayBuffer(f);
+    let onFileOpen = async () => {
+        let filePath = await VideoAPI.getVideoFile();
+        setVideoSource(`localfile://${filePath}`);
     };
 
     let convertSecondsToTimestamp = (seconds) => {
@@ -142,7 +129,7 @@ let AdvancedEditor = () => {
         try {
             setButtonsDisabled(true);
             let videoId = await addVideo(
-                videoSource.substring(videoSource.indexOf(',') + 1),
+                videoSource,
                 subs,
                 videoName,
                 clipNumber,
@@ -333,7 +320,7 @@ let AdvancedEditor = () => {
                         length you want it. However you can use batch mode if
                         you want to cut up your video into smaller pieces.
                     </p>
-                    <input type="file" accept=".mp4" onChange={onFileOpen} />
+                    <button onClick={onFileOpen}>Open Video</button>
                     <Link to="/">
                         <button type="button">Cancel</button>
                     </Link>

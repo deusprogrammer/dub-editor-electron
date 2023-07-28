@@ -139,7 +139,7 @@ export let createWebVttDataUri = (subtitles, substitution, offset = 0) => {
 };
 
 export let addVideo = async (
-    base64ByteStream,
+    videoSource,
     subtitles,
     title,
     clipNumber = 1,
@@ -148,6 +148,7 @@ export let addVideo = async (
 ) => {
     if (isBatch) {
         return await window.api.send('processBatchClip', {
+            videoSource,
             subtitles: convertSubtitlesToSrt(subtitles, type),
             title,
             clipNumber,
@@ -155,7 +156,7 @@ export let addVideo = async (
         });
     }
     return await window.api.send('storeVideo', {
-        base64ByteStream,
+        videoSource,
         subtitles: convertSubtitlesToSrt(subtitles, type),
         title,
         clipNumber,

@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld('api', {
             'exportCollection',
             'setActive',
             'openDialog',
+            'openVideoFile',
             'importZip',
         ];
         if (validChannels.includes(channel)) {

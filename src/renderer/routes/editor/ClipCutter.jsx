@@ -53,24 +53,9 @@ let ClipCutter = () => {
         setWindowSize({ width: window.innerWidth, height: window.innerHeight });
     };
 
-    let onFileOpen = (e) => {
-        let f = e.target.files[0];
-        let fr = new FileReader();
-
-        handleInterstitial(
-            new Promise((resolve, reject) => {
-                fr.onload = async () => {
-                    let url = await VideoAPI.storeTempVideo(fr.result, "batch");
-                    setVideoSource(url);
-                    resolve();
-                };
-            }),
-            (isOpen) => {
-                setInterstitialState({ isOpen, message: 'Loading Video...' });
-            }
-        );
-
-        fr.readAsArrayBuffer(f);
+    let onFileOpen = async () => {
+        let filePath = await VideoAPI.getVideoFile();
+        setVideoSource(`localfile://${filePath}`);
     };
 
     let convertSecondsToTimestamp = (seconds) => {
@@ -226,7 +211,7 @@ let ClipCutter = () => {
                     <p>
                         Please choose the video you wish to create clips from.
                     </p>
-                    <input type="file" accept=".mp4" onChange={onFileOpen} />
+                    <button onClick={onFileOpen}>Open Video</button>
                     <Link to="/">
                         <button type="button">Cancel</button>
                     </Link>

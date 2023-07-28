@@ -92,9 +92,9 @@ const processVideo = (inputFilePath: string, outputFilePath: string, startTime: 
     });
 }
 
-const trimAndWriteVideo = async (outputFilePath: string, startTime: number, endTime: number) => {
+const trimAndWriteVideo = async (inputFilePath: string, outputFilePath: string, startTime: number, endTime: number) => {
     try {
-        await processVideo(BATCH_VIDEO_TEMP_FILE, outputFilePath, startTime, endTime - startTime);
+        await processVideo(inputFilePath, outputFilePath, startTime, endTime - startTime);
     } catch (err) {
         console.error("Unable to trim video: " + err);
         throw new Error("Unable to trim video: " + err);
@@ -557,8 +557,16 @@ const createWindow = async () => {
         return { action: 'deny' };
     });
 
-    protocol.interceptFileProtocol('app', (request, callback) => {
-        let url = request.url.substring(6);
+    protocol.interceptFileProtocol('localfile', (request, callback) => {
+        let filePath = request.url.substring(12);
+        
+        console.log("FILE PATH: " + filePath);
+
+        callback(filePath);
+    });
+
+    protocol.interceptFileProtocol('game', (request, callback) => {
+        let url = request.url.substring(7);
         let pattern = /^(rifftrax|whatthedub)\/(.+)\.(mp4|srt)$/;
 
         if (url === "batch.tmp.mp4") {
@@ -667,6 +675,7 @@ ipcMain.handle('getConfig', () => {
 
 ipcMain.handle('storeBatch', async (event, { clips, video, title }) => {
     batchCache = {
+        video,
         title,
         clipNumber: 1,
         clips,
@@ -684,16 +693,15 @@ ipcMain.handle('hasBatch', (event) => {
 });
 
 ipcMain.handle('nextBatchClip', (event) => {
-    const {startTime, endTime} = batchCache.clips[0];
     return {
         title: batchCache.title,
         clipNumber: batchCache.clipNumber,
         clip: batchCache.clips[0],
-        video: batchCache.video + `#t=${startTime/1000},${endTime/1000}`
+        video: batchCache.video
     };
 });
 
-ipcMain.handle('processBatchClip', async (event, {subtitles, title, clipNumber, game}) => {
+ipcMain.handle('processBatchClip', async (event, {videoSource, subtitles, title, clipNumber, game}) => {
     console.log(
         `STORING ${title}-${clipNumber} for game ${game} with subtitles ${subtitles}`
     );
@@ -720,7 +728,7 @@ ipcMain.handle('processBatchClip', async (event, {subtitles, title, clipNumber, 
         const subFilePath: string = `${subsDirectory}/${baseFileName}.srt`;
 
         // Write video clip
-        await trimAndWriteVideo(videoFilePath, clip.startTime, clip.endTime);
+        await trimAndWriteVideo(videoSource.replace("localfile://", ""), videoFilePath, clip.startTime, clip.endTime);
 
         // Write matching subtitles
         fs.writeFileSync(subFilePath, subtitles);
@@ -822,7 +830,7 @@ ipcMain.handle('getVideo', (event, { id, game }) => {
 
 ipcMain.handle(
     'storeVideo',
-    (event, { base64ByteStream, subtitles, title, clipNumber, game }) => {
+    (event, { videoSource, subtitles, title, clipNumber, game }) => {
         console.log(
             `STORING ${title}-${clipNumber} for game ${game} with subtitles ${subtitles}`
         );
@@ -849,10 +857,7 @@ ipcMain.handle(
 
         console.log('SAVING TO ' + videoFilePath + '\n' + subFilePath);
 
-        fs.writeFileSync(
-            videoFilePath,
-            Buffer.from(base64ByteStream, 'base64')
-        );
+        fs.copyFileSync(videoSource.replace("localfile://", ""), videoFilePath);
         fs.writeFileSync(subFilePath, subtitles);
 
         return baseFileName;
@@ -1023,6 +1028,17 @@ ipcMain.handle('getCollections', (event, game) => {
 ipcMain.handle('openDialog', async () => {
     const response = await dialog.showOpenDialog({
         properties: ['openDirectory', 'createDirectory'],
+    });
+    if (!response.canceled) {
+        return response.filePaths[0];
+    } else {
+        return null;
+    }
+});
+
+ipcMain.handle('openVideoFile', async () => {
+    const response = await dialog.showOpenDialog({
+        properties: ['openFile'],
     });
     if (!response.canceled) {
         return response.filePaths[0];
