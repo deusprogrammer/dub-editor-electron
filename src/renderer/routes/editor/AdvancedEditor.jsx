@@ -14,6 +14,7 @@ import BatchAPI from 'renderer/api/BatchAPI';
 import { useAtom } from 'jotai';
 import { interstitialAtom } from 'renderer/atoms/interstitial.atom';
 import { handleInterstitial } from 'renderer/components/interstitial/Interstitial';
+import VideoAPI from 'renderer/api/VideoAPI';
 
 let AdvancedEditor = () => {
     const [searchParams] = useSearchParams();
@@ -76,7 +77,7 @@ let AdvancedEditor = () => {
             }
         );
         let { clip, video, title, clipNumber } = batchClip;
-        setVideoSource(video);
+        setVideoSource("app://batch.tmp.mp4");
         setVideoLength((clip.endTime - clip.startTime) / 1000);
         setBatchClip(batchClip);
         setStartTime(clip.startTime);
@@ -89,11 +90,20 @@ let AdvancedEditor = () => {
     let onFileOpen = (e) => {
         let f = e.target.files[0];
         let fr = new FileReader();
-        fr.onload = () => {
-            setVideoSource(fr.result);
-        };
+        handleInterstitial(
+            new Promise((resolve, reject) => {
+                fr.onload = async () => {
+                    let url = await VideoAPI.storeTempVideo(fr.result, "clip");
+                    console.log("URL: " + url);
+                    setVideoSource(url);
+                    resolve();
+                };
+        }),
+        (isOpen) => {
+            setInterstitialState({ isOpen, message: 'Loading Video...' });
+        })
 
-        fr.readAsDataURL(f);
+        fr.readAsArrayBuffer(f);
     };
 
     let convertSecondsToTimestamp = (seconds) => {
@@ -245,10 +255,10 @@ let AdvancedEditor = () => {
                         <WhatTheDubPlayer
                             videoSource={videoSource}
                             isPlaying={
-                                isPlaying &&
+                                isPlaying && (!batchClip ||
                                 currentSliderPosition >=
                                     batchClip.clip.startTime &&
-                                currentSliderPosition <= batchClip.clip.endTime
+                                currentSliderPosition <= batchClip.clip.endTime)
                             }
                             videoPosition={currentPosition}
                             subs={subs}
@@ -263,7 +273,6 @@ let AdvancedEditor = () => {
                             onVideoPositionChange={(position) => {
                                 setCurrentSliderPosition(position * 1000);
                             }}
-                            onIndexChange={setCurrentSub}
                             onVideoLoaded={(video) => {
                                 if (!isBatch) {
                                     setEndTime(video.duration * 1000);

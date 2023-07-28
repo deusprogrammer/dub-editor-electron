@@ -27,7 +27,7 @@ let VideoView = (props) => {
                     <div>Name: {videoDetails.name}</div>
                     <div>
                         <WhatTheDubPlayer
-                            videoSource={videoDetails.videoUrl}
+                            videoSource={`app://${params.game}/${params.id}.mp4`}
                             isPlaying={false}
                             videoPosition={0}
                             subs={convertSrtToSubtitles(videoDetails.srtBase64)}

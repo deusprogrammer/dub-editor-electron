@@ -10,7 +10,7 @@
  */
 import path from 'path';
 import fs from 'fs';
-import { app, BrowserWindow, dialog, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, shell, ipcMain, protocol } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -43,7 +43,8 @@ const HOME: string =
 const CONFIG_FILE: string = `${HOME}/.dub-editor-config.json`;
 const COLLECTIONS_FILE: string = `${HOME}/.dub-editor-collections.json`;
 const BATCH_CACHE_FILE: string = `${HOME}/.dub-editor-batch-cache.json`;
-const BATCH_VIDEO_TEMP_FILE: string = `${HOME}/dub-editor-tmp.mp4`;
+const BATCH_VIDEO_TEMP_FILE: string = `${HOME}/dub-editor-batch-tmp.mp4`;
+const CLIP_VIDEO_TEMP_FILE: string = `${HOME}/dub-editor-clip-tmp.mp4`;
 
 export default class AppUpdater {
     constructor() {
@@ -556,9 +557,48 @@ const createWindow = async () => {
         return { action: 'deny' };
     });
 
-    // Remove this if your app does not use auto updates
-    // eslint-disable-next-line
-    new AppUpdater();
+    protocol.interceptFileProtocol('app', (request, callback) => {
+        let url = request.url.substring(6);
+        let pattern = /^(rifftrax|whatthedub)\/(.+)\.(mp4|srt)$/;
+
+        if (url === "batch.tmp.mp4") {
+            return callback(BATCH_VIDEO_TEMP_FILE);
+        } else if (url === "clip.tmp.mp4") {
+            return callback(CLIP_VIDEO_TEMP_FILE);
+        }
+
+        let match : any = url.match(pattern);
+
+        if (!match) {
+            return null;
+        }
+
+        let game = match[1];
+        let id = match[2];
+        let ext = match[3];
+
+        let directory = null;
+        if (game === 'rifftrax') {
+            directory = config.rifftraxDirectory;
+        } else if (game === 'whatthedub') {
+            directory = config.whatTheDubDirectory;
+        }
+
+        let subdirectory;
+        if (ext === 'mp4') {
+            subdirectory = 'VideoClips';
+        } else if (ext = 'srt') {
+            subdirectory = 'Subtitles';
+        } else {
+            subdirectory = 'VideoClips';
+        }
+
+        const assetDirectory: string =
+            `${directory}/StreamingAssets/${subdirectory}`.replace('~', HOME);
+        const filePath: string = `${assetDirectory}/${id}.${ext}`;
+        
+        callback(filePath);
+    });
 };
 
 /**
@@ -630,7 +670,6 @@ ipcMain.handle('storeBatch', async (event, { clips, video, title }) => {
         title,
         clipNumber: 1,
         clips,
-        video,
     };
 
     // Write cache file
@@ -638,16 +677,6 @@ ipcMain.handle('storeBatch', async (event, { clips, video, title }) => {
         BATCH_CACHE_FILE,
         Buffer.from(JSON.stringify(batchCache, null, 5))
     );
-
-    // Write temporary video file
-    let videoByteStream : any = batchCache.video;
-    videoByteStream = videoByteStream.substring(videoByteStream.indexOf(','));
-    let buffer = Buffer.from(videoByteStream, "base64");
-    try {
-        await fs.writeFileSync(BATCH_VIDEO_TEMP_FILE, buffer);
-    } catch (err) {
-        throw new Error("Unable to trim video: " + err);
-    }
 });
 
 ipcMain.handle('hasBatch', (event) => {
@@ -827,6 +856,31 @@ ipcMain.handle(
         fs.writeFileSync(subFilePath, subtitles);
 
         return baseFileName;
+    }
+);
+
+ipcMain.handle(
+    'storeTempVideo',
+    (event, {videoArrayBuffer, type}) => {
+        console.log(
+            `STORING TEMP CLIP VIDEO`
+        );
+
+        if (type === "clip") {
+            fs.writeFileSync(
+                CLIP_VIDEO_TEMP_FILE,
+                Buffer.from(videoArrayBuffer)
+            );
+            return `app://clip.tmp.mp4`;
+        } else if (type === "batch") {
+            fs.writeFileSync(
+                BATCH_VIDEO_TEMP_FILE,
+                Buffer.from(videoArrayBuffer)
+            );
+            return `app://batch.tmp.mp4`;
+        }
+
+        return null;        
     }
 );
 

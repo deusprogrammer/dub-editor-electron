@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('api', {
             'getVideos',
             'getVideo',
             'storeVideo',
+            'storeTempVideo',
             'deleteVideo',
             'disableVideos',
             'createCollection',

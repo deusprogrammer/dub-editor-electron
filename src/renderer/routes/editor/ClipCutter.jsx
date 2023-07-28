@@ -16,6 +16,7 @@ import ClipList from 'renderer/components/ClipList';
 import { interstitialAtom } from 'renderer/atoms/interstitial.atom';
 import { handleInterstitial } from 'renderer/components/interstitial/Interstitial';
 import { useAtom } from 'jotai';
+import VideoAPI from 'renderer/api/VideoAPI';
 
 let ClipCutter = () => {
     const params = useParams();
@@ -58,8 +59,9 @@ let ClipCutter = () => {
 
         handleInterstitial(
             new Promise((resolve, reject) => {
-                fr.onload = () => {
-                    setVideoSource(fr.result);
+                fr.onload = async () => {
+                    let url = await VideoAPI.storeTempVideo(fr.result, "batch");
+                    setVideoSource(url);
                     resolve();
                 };
             }),
@@ -68,7 +70,7 @@ let ClipCutter = () => {
             }
         );
 
-        fr.readAsDataURL(f);
+        fr.readAsArrayBuffer(f);
     };
 
     let convertSecondsToTimestamp = (seconds) => {

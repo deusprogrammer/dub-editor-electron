@@ -5,10 +5,16 @@ import { addVideo } from '../../util/VideoTools';
 import { useParams, useNavigate } from 'react-router';
 import { Link } from 'react-router-dom';
 import CollectionAPI from '../../api/CollectionAPI';
+import VideoAPI from 'renderer/api/VideoAPI';
+import { useAtom } from 'jotai';
+import { interstitialAtom } from 'renderer/atoms/interstitial.atom';
+import { handleInterstitial } from 'renderer/components/interstitial/Interstitial';
 
 let SimpleEditor = () => {
     const params = useParams();
     const navigate = useNavigate();
+
+    const [, setInterstitialState] = useAtom(interstitialAtom);
 
     const [error, setError] = useState(null);
     const [clipNumber, setClipNumber] = useState(1);
@@ -81,11 +87,19 @@ let SimpleEditor = () => {
     let onFileOpen = (e) => {
         let f = e.target.files[0];
         let fr = new FileReader();
-        fr.onload = () => {
-            setVideoSource(fr.result);
-        };
+        handleInterstitial(
+            new Promise((resolve, reject) => {
+                fr.onload = async () => {
+                    let url = await VideoAPI.storeTempVideo(fr.result, "clip");
+                    setVideoSource(url);
+                    resolve();
+                };
+            }),
+            (isOpen) => {setInterstitialState({isOpen, message: "Loading video..."})}
+        );
+        
 
-        fr.readAsDataURL(f);
+        fr.readAsArrayBuffer(f);
     };
 
     let convertSecondsToTimestamp = (seconds) => {
