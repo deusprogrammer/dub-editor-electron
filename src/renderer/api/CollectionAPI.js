@@ -15,19 +15,19 @@ const deleteCollection = async (collectionId, game, deleteFiles = false) => {
 };
 
 const removeFromCollection = async (collectionId, game, videoId) => {
-    return (collectionMap = await window.api.send('removeFromCollection', {
+    return await window.api.send('removeFromCollection', {
         game,
         collectionId,
         videoId,
-    }));
+    });
 };
 
 const addToCollection = async (collectionId, game, videoId) => {
-    return (collectionMap = await window.api.send('addToCollection', {
+    return await window.api.send('addToCollection', {
         game,
         collectionId,
         videoId,
-    }));
+    });
 };
 
 export default {
