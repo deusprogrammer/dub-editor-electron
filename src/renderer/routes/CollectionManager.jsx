@@ -229,6 +229,7 @@ export default () => {
                                                 type="button"
                                                 onClick={() => {
                                                     removeFromCollection(
+                                                        collectionId,
                                                         videoId
                                                     );
                                                 }}

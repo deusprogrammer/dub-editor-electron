@@ -970,16 +970,17 @@ ipcMain.handle(
     'removeFromCollection',
     (event, { collectionId, videoId, game }) => {
         console.log(
-            `REMOVING ${videoId} for game ${game} to collection ${collectionId}`
+            `REMOVING ${videoId} for game ${game} from collection ${collectionId}`
         );
 
         // If the collection isn't present, return immediately.
         if (!(collectionId in collections[game])) {
+            console.log("COLLECTION NOT PRESENT");
             return;
         }
 
         // Filter out videoId that's being removed.
-        collections[game][collectionId].filter(
+        collections[game][collectionId] = collections[game][collectionId].filter(
             (element: string) => element !== videoId
         );
 
