@@ -180,3 +180,18 @@ li {
         transform: rotate(360deg);
     }
 }
+
+.clip-pack-edit {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.clip-pack-edit > div {
+    height: 80vh;
+    overflow-y: scroll;
+}
+
+.clip-table td:first-child {
+    width: 200px;
+}

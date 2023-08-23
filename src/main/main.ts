@@ -275,6 +275,12 @@ const exportToZip = async (
     collections[game][collectionId].forEach((videoId: string) => {
         let videoFilePath: string = `${clipsDirectory}/${videoId}.mp4`;
         let subFilePath: string = `${subsDirectory}/${videoId}.srt`;
+        
+        if (!fs.existsSync(videoFilePath) || !fs.existsSync(subFilePath)) {
+            console.log("SKIPPING " + videoId);
+            return;
+        } 
+
         const videoBase64: string = fs.readFileSync(videoFilePath, {
             encoding: 'base64',
         });

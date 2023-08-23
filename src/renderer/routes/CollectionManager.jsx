@@ -217,44 +217,66 @@ export default () => {
                 >
                     Back to Collection List
                 </button>
-                <h2>Clip Pack {collectionId}</h2>
-                {collections[collectionId].map((videoId) => {
-                    return (
-                        <div>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    removeFromCollection(videoId);
-                                }}
-                            >
-                                -
-                            </button>
-                            {videoId.replace(/_/g, ' ')}
-                        </div>
-                    );
-                })}
-                <h2>Videos Not in Clip Pack</h2>
-                {videos
-                    .filter(
-                        (video) =>
-                            !collections[collectionId].includes(video._id) &&
-                            video._id.startsWith('_')
-                    )
-                    .map(({ _id: videoId }) => {
-                        return (
-                            <div>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        addToCollection(collectionId, videoId);
-                                    }}
-                                >
-                                    +
-                                </button>
-                                {videoId.replace(/_/g, ' ')}
-                            </div>
-                        );
-                    })}
+                <div className="clip-pack-edit">
+                    <div>
+                        <h2>Clip Pack {collectionId}</h2>
+                        <table style={{ textAlign: 'center', margin: 'auto' }}>
+                            {collections[collectionId].map((videoId) => {
+                                return (
+                                    <tr>
+                                        <td>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    removeFromCollection(
+                                                        videoId
+                                                    );
+                                                }}
+                                            >
+                                                -
+                                            </button>
+                                        </td>
+                                        <td>{videoId.replace(/_/g, ' ')}</td>
+                                    </tr>
+                                );
+                            })}
+                        </table>
+                    </div>
+                    <div>
+                        <h2>Videos Not in Clip Pack</h2>
+                        <table style={{ textAlign: 'center', margin: 'auto' }}>
+                            {videos
+                                .filter(
+                                    (video) =>
+                                        !collections[collectionId].includes(
+                                            video._id
+                                        ) && video._id.startsWith('_')
+                                )
+                                .map(({ _id: videoId }) => {
+                                    return (
+                                        <tr>
+                                            <td>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        addToCollection(
+                                                            collectionId,
+                                                            videoId
+                                                        );
+                                                    }}
+                                                >
+                                                    +
+                                                </button>
+                                            </td>
+                                            <td>
+                                                {videoId.replace(/_/g, ' ')}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                        </table>
+                    </div>
+                </div>
             </div>
         );
     }
