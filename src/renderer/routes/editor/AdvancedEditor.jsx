@@ -77,7 +77,6 @@ let AdvancedEditor = () => {
             }
         );
         let { clip, video, title, clipNumber } = batchClip;
-        console.log("DOG WATER: " + video);
         setVideoSource(video);
         setVideoLength((clip.endTime - clip.startTime) / 1000);
         setBatchClip(batchClip);

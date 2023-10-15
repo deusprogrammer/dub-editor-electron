@@ -52,7 +52,7 @@ export let convertSubtitlesToSrt = (subtitles, game) => {
                 text = '[Insert Riff Here]';
             } else if (subtitle.type === 'dynamic' && game === 'whatthedub') {
                 text =
-                    subtitle.voice === 'male' ? '[male_dub]' : '[female:dub]';
+                    subtitle.voice === 'male' ? '[male_dub]' : '[female_dub]';
             }
             return `${index + 1}\n${convertSecondsToTimestamp(
                 subtitle.startTime / 1000
