@@ -285,7 +285,7 @@ const exportToZip = async (
     let previewImagePath: string = `${previewImageDirectory}/${collectionId}.jpg`;
 
     if (!fs.existsSync(previewImagePath)) {
-        previewImagePath = `${__dirname}/images/preview.jpg`;
+        previewImagePath = path.join(__dirname.substring(0, __dirname.indexOf('app.asar')), 'images/preview.jpg');;
     }
 
     const previewImageBase64: string = fs.readFileSync(previewImagePath, {
