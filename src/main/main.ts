@@ -266,20 +266,69 @@ const exportToZip = async (
         '~',
         HOME
     );
+    const thumbnailsDirectory = `${directory}/StreamingAssets/ThumbNails`.replace(
+        '~',
+        HOME
+    );
+    const previewImageDirectory = `${directory}/StreamingAssets/_PreviewImages`.replace(
+        '~',
+        HOME
+    );
     const zipFilePath = `${filePath}/${collectionId}.zip`;
 
     const zip: JSZip = new JSZip();
     zip.file(zipFilePath);
 
-    let root = zip.folder('StreamingAssets');
-    collections[game][collectionId].forEach((videoId: string) => {
+    let root = zip.folder('');
+
+    // Store preview image
+    let previewImagePath: string = `${previewImageDirectory}/${collectionId}.jpg`;
+
+    if (!fs.existsSync(previewImagePath)) {
+        previewImagePath = `${__dirname}/images/preview.jpg`;
+    }
+
+    const previewImageBase64: string = fs.readFileSync(previewImagePath, {
+        encoding: 'base64',
+    });
+
+    // @ts-ignore
+    root.file('preview.jpg', previewImageBase64, {
+        base64: true,
+    });
+
+    for (let videoId of collections[game][collectionId]) {
         let videoFilePath: string = `${clipsDirectory}/${videoId}.mp4`;
         let subFilePath: string = `${subsDirectory}/${videoId}.srt`;
+        let thumbFilePath: string = `${thumbnailsDirectory}/${videoId}.jpg`;
         
         if (!fs.existsSync(videoFilePath) || !fs.existsSync(subFilePath)) {
             console.log("SKIPPING " + videoId);
-            return;
+            continue;
         } 
+
+        if (!fs.existsSync(thumbFilePath)) {
+            // Create a thumbnail
+            const thumbnailTime = '00:00:01';
+            
+            if(!fs.existsSync(thumbnailsDirectory)) {
+                fs.mkdirSync(thumbnailsDirectory);
+            }
+
+            await ffmpeg(videoFilePath)
+            .seekInput(thumbnailTime)
+            .frames(1)
+            .output(thumbFilePath)
+            .on('end', () => {
+                console.log('Thumbnail extracted successfully!');
+            })
+            .on('error', (err : any) => {
+                console.error('Error extracting thumbnail:', err);
+            })
+            .run();
+        }
+
+        console.log("THUMBNAIL PATH: " + thumbFilePath);
 
         const videoBase64: string = fs.readFileSync(videoFilePath, {
             encoding: 'base64',
@@ -287,15 +336,22 @@ const exportToZip = async (
         const subtitlesBase64: string = fs.readFileSync(subFilePath, {
             encoding: 'base64',
         });
+        const thumbNailBase64: string = fs.readFileSync(thumbFilePath, {
+            encoding: 'base64',
+        });
         // @ts-ignore
-        root.folder('VideoClips').file(`${videoId}.mp4`, videoBase64, {
+        root.folder('videoclips').file(`${videoId}.mp4`, videoBase64, {
             base64: true,
         });
         // @ts-ignore
-        root.folder('Subtitles').file(`${videoId}.srt`, subtitlesBase64, {
+        root.folder('subtitles').file(`${videoId}.srt`, subtitlesBase64, {
             base64: true,
         });
-    });
+        // @ts-ignore
+        root.folder('thumbnails').file(`${videoId}.jpg`, thumbNailBase64, {
+            base64: true,
+        });
+    };
 
     zip.generateNodeStream({ streamFiles: true }).pipe(
         fs.createWriteStream(zipFilePath)
@@ -834,6 +890,42 @@ ipcMain.handle('getVideo', (event, { id, game }) => {
     };
 });
 
+ipcMain.handle('getPreviewImage', (event, { collectionId, game }) => {
+    console.log('OPENING: ' + collectionId + ' from game ' + game);
+
+    let directory = null;
+    if (game === 'rifftrax') {
+        directory = config.rifftraxDirectory;
+    } else if (game === 'whatthedub') {
+        directory = config.whatTheDubDirectory;
+    } else {
+        return [];
+    }
+
+    const previewImageDirectory: string =
+        `${directory}/StreamingAssets/_PreviewImages`.replace('~', HOME);
+    const previewImagePath: string = `${previewImageDirectory}/${collectionId}.jpg`;
+
+    console.log("Opening " + previewImagePath);
+
+    if (!fs.existsSync(previewImagePath)) {
+        console.log("File doesn't exist?");
+        return {
+            name: 'Unknown',
+            imageUrl: null
+        }
+    }
+
+    const previewImageBase64: string = fs.readFileSync(previewImagePath, {
+        encoding: 'base64',
+    });
+
+    return {
+        name: collectionId.replace(/_/g, ' '),
+        imageUrl: `data:image/jpeg;base64,${previewImageBase64}`
+    };
+});
+
 ipcMain.handle(
     'storeVideo',
     (event, { videoSource, subtitles, title, clipNumber, game }) => {
@@ -854,19 +946,75 @@ ipcMain.handle(
 
         const clipsDirectory =
             `${directory}/StreamingAssets/VideoClips`.replace('~', HOME);
+        const thumbNailsDirectory =
+            `${directory}/StreamingAssets/ThumbNails`.replace('~', HOME);
         const subsDirectory = `${directory}/StreamingAssets/Subtitles`.replace(
             '~',
             HOME
         );
-        const videoFilePath = `${clipsDirectory}/${baseFileName}.mp4`;
-        const subFilePath = `${subsDirectory}/${baseFileName}.srt`;
+
+        // Store the videos disabled by default to allow testing via collection
+        const videoFilePath = `${clipsDirectory}/${baseFileName}.mp4.disabled`;
+        const subFilePath = `${subsDirectory}/${baseFileName}.srt.disabled`;
 
         console.log('SAVING TO ' + videoFilePath + '\n' + subFilePath);
 
         fs.copyFileSync(videoSource.replace("localfile://", ""), videoFilePath);
         fs.writeFileSync(subFilePath, subtitles);
 
+        // Create a thumbnail
+        const thumbnailTime = '00:00:01';
+        const thumbNailPath = `${thumbNailsDirectory}/${baseFileName}.jpg`;
+        
+        if(!fs.existsSync(thumbNailsDirectory)) {
+            fs.mkdirSync(thumbNailsDirectory);
+        }
+
+        ffmpeg(videoFilePath)
+        .seekInput(thumbnailTime)
+        .frames(1)
+        .output(thumbNailPath)
+        .on('end', () => {
+            console.log('Thumbnail extracted successfully!');
+        })
+        .on('error', (err : any) => {
+            console.error('Error extracting thumbnail:', err);
+        })
+        .run();
+
         return baseFileName;
+    }
+);
+
+ipcMain.handle(
+    'storePreviewImage',
+    (event, { collectionId, imageBase64, game }) => {
+        console.log(
+            `STORING ${collectionId} for game ${game}`
+        );
+
+        let directory = null;
+        if (game === 'rifftrax') {
+            directory = config.rifftraxDirectory;
+        } else if (game === 'whatthedub') {
+            directory = config.whatTheDubDirectory;
+        } else {
+            return;
+        }
+
+        const previewImageDirectory =
+            `${directory}/StreamingAssets/_PreviewImages`.replace('~', HOME);
+
+        // Store the videos disabled by default to allow testing via collection
+        const previewImagePath = `${previewImageDirectory}/${collectionId}.jpg`;
+
+        if (!fs.existsSync(previewImageDirectory)) {
+            fs.mkdirSync(previewImageDirectory);
+        }
+
+        console.log('SAVING TO ' + previewImagePath);
+
+        fs.writeFileSync(previewImagePath, imageBase64.split(';base64,').pop(), {encoding: 'base64'});
     }
 );
 

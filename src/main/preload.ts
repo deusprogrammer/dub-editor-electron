@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld('api', {
             'popNextBatchClip',
             'processBatchClip',
             'clearBatchCache',
+            'getPreviewImage',
+            'storePreviewImage',
             'getVideos',
             'getVideo',
             'storeVideo',

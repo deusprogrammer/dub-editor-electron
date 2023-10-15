@@ -30,10 +30,27 @@ const addToCollection = async (collectionId, game, videoId) => {
     });
 };
 
+const storePreviewImage = async (collectionId, imageBase64, game) => {
+    return await window.api.send('storePreviewImage', {
+        game,
+        collectionId,
+        imageBase64
+    });
+};
+
+const getPreviewImage = async (collectionId, game) => {
+    return await window.api.send('getPreviewImage', {
+        game,
+        collectionId
+    });
+};
+
 export default {
     getCollections,
     createNewCollection,
     deleteCollection,
     removeFromCollection,
     addToCollection,
+    storePreviewImage,
+    getPreviewImage
 };

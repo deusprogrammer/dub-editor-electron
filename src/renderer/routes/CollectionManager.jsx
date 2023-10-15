@@ -2,6 +2,7 @@ import CollectionAPI from 'renderer/api/CollectionAPI';
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router';
 import { toast } from 'react-toastify';
+import ImageSelector from 'renderer/components/ImageSelector';
 
 export default () => {
     const { game } = useParams();
@@ -9,16 +10,25 @@ export default () => {
     const [videos, setVideos] = useState([]);
     const [collections, setCollections] = useState({ _originals: [] });
     const [selected, setSelected] = useState(null);
+    const [previewImageBase64, setPreviewImageBase64] = useState(null);
+    const [editingMetaData, setEditingMetaData] = useState(false);
 
     useEffect(() => {
         loadData();
-    }, [game]);
+    }, [game, selected]);
 
     const loadData = async () => {
         const collectionMap = await window.api.send('getCollections', game);
         const videoList = await window.api.send('getVideos', game);
         setCollections(collectionMap);
         setVideos(videoList);
+    
+        if (selected) {
+            const previewImage = await CollectionAPI.getPreviewImage(selected, game);
+            console.log(JSON.stringify(previewImage));
+            console.log(previewImage.imageUrl);
+            setPreviewImageBase64(previewImage.imageUrl);
+        }
     };
 
     const createNewCollection = async () => {
@@ -79,6 +89,10 @@ export default () => {
         setCollections(collectionMap);
         toast('Imported new clip pack!', { type: 'info' });
     };
+
+    const changePreviewImage = async (base64ImagePayload) => {
+        await CollectionAPI.storePreviewImage(selected, base64ImagePayload, game);
+    }
 
     if (!selected) {
         return (
@@ -204,6 +218,28 @@ export default () => {
                 </table>
             </div>
         );
+    } else if (selected && editingMetaData) {
+        return (
+            <div>
+                <br />
+                <button
+                    type="button"
+                    onClick={() => {
+                        setEditingMetaData(false);
+                    }}
+                >
+                    Back to Collection Editor
+                </button>
+                <div>
+                        <h2>Preview Image</h2>
+                        <ImageSelector className='preview-image' src={previewImageBase64} accept='.jpg,.jpeg' onChange={changePreviewImage} />
+                </div>
+                <div>
+                    <h2>Ending Movies</h2>
+                    <p>Coming Soon!</p>
+                </div>
+            </div>
+        )
     } else {
         let collectionId = selected;
         return (
@@ -216,6 +252,14 @@ export default () => {
                     }}
                 >
                     Back to Collection List
+                </button>
+                <button
+                    type="button"
+                    onClick={() => {
+                        setEditingMetaData(true);
+                    }}
+                >
+                    Edit Metadata
                 </button>
                 <div className="clip-pack-edit">
                     <div>
