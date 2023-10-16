@@ -25,6 +25,7 @@ const ffmpeg = require('fluent-ffmpeg');
 
 // Fuck ASAR, it's a piece of shit with shitty documentation and it doesn't work the same way in every OS.
 let ffmpegPath = path.join(__dirname.substring(0, __dirname.indexOf('app.asar')), 'node_modules/ffmpeg-static/ffmpeg');
+let defaultPreviewFilePath = path.join(__dirname.substring(0, __dirname.indexOf('app.asar')), 'images/preview.jpg');
 
 if (process.platform === "win32") {
     ffmpegPath += ".exe";
@@ -33,8 +34,8 @@ if (process.platform === "win32") {
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 console.log("HOME DIRECTORY: " + __dirname);
-console.log("FFMPEG PATH: " +ffmpegPath);
-
+console.log("FFMPEG PATH: " + ffmpegPath);
+console.log("DEFAULT PREVIEW IMAGE: " + defaultPreviewFilePath);
 
 const HOME: string =
     process.platform === 'darwin'
@@ -104,6 +105,22 @@ const trimAndWriteVideo = async (inputFilePath: string, outputFilePath: string, 
 const createClipName = (title: string, clipNumber: number) => {
     return '_' + title.replace(' ', '_') + `-Clip${`${clipNumber}`.padStart(3, '0')}`;
 };
+
+const createThumbnail = async (videoFilePath: string, thumbnailTime: string, thumbFilePath: string) => {
+    return new Promise((resolve, reject) => {
+        ffmpeg(videoFilePath)
+            .seekInput(thumbnailTime)
+            .frames(1)
+            .output(thumbFilePath)
+            .on('end', () => {
+                resolve(0);
+            })
+            .on('error', (err : any) => {
+                reject();
+            })
+            .run();
+    });
+}
 
 const importZip = async (filePath: string, game: string) => {
     let directory = null;
@@ -285,7 +302,7 @@ const exportToZip = async (
     let previewImagePath: string = `${previewImageDirectory}/${collectionId}.jpg`;
 
     if (!fs.existsSync(previewImagePath)) {
-        previewImagePath = path.join(__dirname.substring(0, __dirname.indexOf('app.asar')), 'images/preview.jpg');;
+        previewImagePath = defaultPreviewFilePath;
     }
 
     const previewImageBase64: string = fs.readFileSync(previewImagePath, {
@@ -315,17 +332,7 @@ const exportToZip = async (
                 fs.mkdirSync(thumbnailsDirectory);
             }
 
-            await ffmpeg(videoFilePath)
-            .seekInput(thumbnailTime)
-            .frames(1)
-            .output(thumbFilePath)
-            .on('end', () => {
-                console.log('Thumbnail extracted successfully!');
-            })
-            .on('error', (err : any) => {
-                console.error('Error extracting thumbnail:', err);
-            })
-            .run();
+            await createThumbnail(videoFilePath, thumbnailTime, thumbFilePath);
         }
 
         console.log("THUMBNAIL PATH: " + thumbFilePath);
@@ -629,7 +636,7 @@ const createWindow = async () => {
 
     protocol.interceptFileProtocol('game', (request, callback) => {
         let url = request.url.substring(7);
-        let pattern = /^(rifftrax|whatthedub)\/(.+)\.(mp4|srt)$/;
+        let pattern = /^(rifftrax|whatthedub)\/(.+)\.(mp4|srt)\.*(disabled)*$/;
 
         if (url === "batch.tmp.mp4") {
             return callback(BATCH_VIDEO_TEMP_FILE);
@@ -954,8 +961,8 @@ ipcMain.handle(
         );
 
         // Store the videos disabled by default to allow testing via collection
-        const videoFilePath = `${clipsDirectory}/${baseFileName}.mp4.disabled`;
-        const subFilePath = `${subsDirectory}/${baseFileName}.srt.disabled`;
+        const videoFilePath = `${clipsDirectory}/${baseFileName}.mp4`;
+        const subFilePath = `${subsDirectory}/${baseFileName}.srt`;
 
         console.log('SAVING TO ' + videoFilePath + '\n' + subFilePath);
 
@@ -970,17 +977,7 @@ ipcMain.handle(
             fs.mkdirSync(thumbNailsDirectory);
         }
 
-        ffmpeg(videoFilePath)
-        .seekInput(thumbnailTime)
-        .frames(1)
-        .output(thumbNailPath)
-        .on('end', () => {
-            console.log('Thumbnail extracted successfully!');
-        })
-        .on('error', (err : any) => {
-            console.error('Error extracting thumbnail:', err);
-        })
-        .run();
+        createThumbnail(videoFilePath, thumbnailTime, thumbNailPath);
 
         return baseFileName;
     }
@@ -1173,6 +1170,7 @@ ipcMain.handle('exportCollection', async (event, { collectionId, game }) => {
         return null;
     }
 
+    toggleAllVideos(game, true);
     exportToZip(response.filePaths[0], collectionId, game);
 });
 
@@ -1194,6 +1192,9 @@ ipcMain.handle('openDialog', async () => {
 ipcMain.handle('openVideoFile', async () => {
     const response = await dialog.showOpenDialog({
         properties: ['openFile'],
+        filters: [
+            {name: "Clips", extensions: ["mp4"]}
+        ]
     });
     if (!response.canceled) {
         return response.filePaths[0];
