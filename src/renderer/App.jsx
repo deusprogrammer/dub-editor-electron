@@ -32,19 +32,8 @@ const VERSION = 'v2.0.0-beta';
 let App = (props) => {
     const navigate = useNavigate();
     const location = useLocation();
-
     const [interstitialState, setInterstitialState] = useAtom(interstitialAtom);
-
-    const [config, setConfig] = useState({});
     const [game, setGame] = useState('rifftrax');
-    useEffect(() => {
-        getConfig();
-    }, []);
-
-    const getConfig = async () => {
-        const config = await window.api.send('getConfig');
-        setConfig(config);
-    };
 
     const changeGame = (newGame) => {
         setGame(newGame);
@@ -52,28 +41,6 @@ let App = (props) => {
             replace: true,
         });
     };
-
-    if (!config) {
-        return <div>Loading Config</div>;
-    } else if (
-        config &&
-        !config.rifftraxDirectory &&
-        !config.whatTheDubDirectory
-    ) {
-        return (
-            <div className="App">
-                <h1>Dub Editor</h1>
-                <hr />
-                <div>{VERSION}</div>
-                <hr />
-                <Config
-                    onRefresh={() => {
-                        getConfig();
-                    }}
-                />
-            </div>
-        );
-    }
 
     return (
         <div className="App">

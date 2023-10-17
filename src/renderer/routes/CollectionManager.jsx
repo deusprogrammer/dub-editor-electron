@@ -22,9 +22,12 @@ export default () => {
         const videoList = await window.api.send('getVideos', game);
         setCollections(collectionMap);
         setVideos(videoList);
-    
+
         if (selected) {
-            const previewImage = await CollectionAPI.getPreviewImage(selected, game);
+            const previewImage = await CollectionAPI.getPreviewImage(
+                selected,
+                game
+            );
             console.log(JSON.stringify(previewImage));
             console.log(previewImage.imageUrl);
             setPreviewImageBase64(previewImage.imageUrl);
@@ -91,22 +94,17 @@ export default () => {
     };
 
     const changePreviewImage = async (base64ImagePayload) => {
-        await CollectionAPI.storePreviewImage(selected, base64ImagePayload, game);
-    }
+        await CollectionAPI.storePreviewImage(
+            selected,
+            base64ImagePayload,
+            game
+        );
+    };
 
     if (!selected) {
         return (
             <div>
                 <h2>Pack Manager ({game})</h2>
-                <h3>Actions</h3>
-                <button
-                    type="button"
-                    onClick={() => {
-                        importZip();
-                    }}
-                >
-                    Import Clip Pack
-                </button>
                 <h3>Clip Packs</h3>
                 <table style={{ margin: 'auto' }}>
                     <tbody>
@@ -136,35 +134,6 @@ export default () => {
                             <td></td>
                             <td></td>
                         </tr>
-                        <tr>
-                            <td style={{ textAlign: 'left' }}>
-                                <b>Originals</b> (
-                                {
-                                    videos.filter(
-                                        (video) => !video._id.startsWith('_')
-                                    ).length
-                                }{' '}
-                                videos)
-                            </td>
-                            <td>
-                                <button
-                                    onClick={() => {
-                                        launch(
-                                            videos
-                                                .filter(
-                                                    (video) =>
-                                                        !video._id.startsWith(
-                                                            '_'
-                                                        )
-                                                )
-                                                .map((video) => video._id)
-                                        );
-                                    }}
-                                >
-                                    Launch
-                                </button>
-                            </td>
-                        </tr>
                         {Object.keys(collections).map((key) => {
                             return (
                                 <tr key={key}>
@@ -173,13 +142,6 @@ export default () => {
                                         videos)
                                     </td>
                                     <td>
-                                        <button
-                                            onClick={() => {
-                                                launch(collections[key]);
-                                            }}
-                                        >
-                                            Launch
-                                        </button>
                                         <button
                                             onClick={() => {
                                                 setSelected(key);
@@ -231,15 +193,20 @@ export default () => {
                     Back to Collection Editor
                 </button>
                 <div>
-                        <h2>Preview Image</h2>
-                        <ImageSelector className='preview-image' src={previewImageBase64} accept='.jpg,.jpeg' onChange={changePreviewImage} />
+                    <h2>Preview Image</h2>
+                    <ImageSelector
+                        className="preview-image"
+                        src={previewImageBase64}
+                        accept=".jpg,.jpeg"
+                        onChange={changePreviewImage}
+                    />
                 </div>
                 <div>
                     <h2>Ending Movies</h2>
                     <p>Coming Soon!</p>
                 </div>
             </div>
-        )
+        );
     } else {
         let collectionId = selected;
         return (
