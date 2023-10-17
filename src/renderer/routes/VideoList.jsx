@@ -1,8 +1,11 @@
+import { useAtom } from 'jotai';
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import BatchAPI from 'renderer/api/BatchAPI';
 import ConfigAPI from 'renderer/api/ConfigAPI';
+import { interstitialAtom } from 'renderer/atoms/interstitial.atom';
+import { handleInterstitial } from 'renderer/components/interstitial/Interstitial';
 
 let VideoList = () => {
     const { game } = useParams();
@@ -10,6 +13,7 @@ let VideoList = () => {
     const [batchCount, setBatchCount] = useState(0);
     const [collections, setCollections] = useState({ _originals: [] });
     const [config, setConfig] = useState({});
+    const [, setInterstitialState] = useAtom(interstitialAtom);
 
     useEffect(() => {
         loadVideos();
@@ -27,7 +31,12 @@ let VideoList = () => {
     };
 
     const deleteFile = async (id, game, isActive) => {
-        await window.api.send('deleteVideo', { id, game, isActive });
+        await handleInterstitial(
+            window.api.send('deleteVideo', { id, game, isActive }),
+            (open) => {
+                setInterstitialState(open);
+            }
+        );
         toast('Deleted video', { type: 'info' });
         loadVideos();
     };

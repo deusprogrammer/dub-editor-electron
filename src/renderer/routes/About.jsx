@@ -8,8 +8,8 @@ const About = (props) => {
                 Dub Editor is a free and open source piece of software created
                 by thetruekingofspace provided under the MIT License. The source
                 code can be found at{' '}
-                <a href="https://github.com/deusprogrammer/wtd-tool-electron">
-                    https://github.com/deusprogrammer/wtd-tool-electron
+                <a href="https://github.com/deusprogrammer/dub-editor-electron">
+                    https://github.com/deusprogrammer/dub-editor-electron
                 </a>
                 . If you paid for this program, you were scammed. If you have
                 any ideas, comments, questions, or bugs...please contact
@@ -33,7 +33,9 @@ const About = (props) => {
                 (deusprogrammer@gmail.com)
             </div>
             <h4>Testers</h4>
-            <div>TBA</div>
+            <div>
+                <strong>Tester</strong>: Typically Thomas
+            </div>
         </div>
     );
 };

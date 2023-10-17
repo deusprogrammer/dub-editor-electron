@@ -62,10 +62,6 @@ const SUBTITLE_SUB_DIRECTORY =          `_Subtitles`;
 const THUMBNAIL_SUB_DIRECTORY =         `_ThumbNails`;
 const PREVIEW_IMAGE_SUB_DIRECTORY =     `_PreviewImages`;
 
-const VIDEO_INSTALL_SUB_DIRECTORY =     '/StreamingAssets/VideoClips';
-const SUBTITLE_INSTALL_SUB_DIRECTORY =  '/StreamingAssets/Subtitles';
-const THUMBNAIL_INSTALL_SUB_DIRECTORY = '/StreamingAssets/ThumbNails';
-
 export default class AppUpdater {
     constructor() {
         log.transports.file.level = 'info';
@@ -282,23 +278,19 @@ const exportToZip = async (
 const deleteClip = (id: string, game: string) => {
     console.log('DELETING ' + id + ' FOR GAME ' + game);
 
-    const {clip: clipsDirectory, subtitle: subsDirectory} = getClipPaths(id, game);
+    const {clip: videoFilePath, subtitle: subFilePath} = getClipPaths(id, game);
 
-    let videoFilePath = `${clipsDirectory}/${id}.mp4`;
-    let subFilePath = `${subsDirectory}/${id}.srt`;
+    console.log('DELETING ' + videoFilePath);
+    console.log('DELETING ' + subFilePath);
 
     // Delete video files
     if (fs.existsSync(videoFilePath)) {
         fs.unlinkSync(videoFilePath);
-    } else if (fs.existsSync(videoFilePath + '.disabled')) {
-        fs.unlinkSync(videoFilePath + '.disabled');
     }
 
     // Delete subtitle files
     if (fs.existsSync(subFilePath)) {
         fs.unlinkSync(subFilePath);
-    } else if (fs.existsSync(subFilePath + '.disabled')) {
-        fs.unlinkSync(subFilePath + '.disabled');
     }
 
     // Remove references to video in collections
@@ -399,6 +391,11 @@ const createWindow = async () => {
                 ? path.join(__dirname, 'preload.js')
                 : path.join(__dirname, '../../.erb/dll/preload.js'),
         },
+    });
+
+    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+        shell.openExternal(url);
+        return { action: 'deny' };
     });
 
     mainWindow.loadURL(resolveHtmlPath('index.html'));
