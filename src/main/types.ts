@@ -3,7 +3,10 @@ export type DirectoryList = {
     clips: string,
     subtitles: string,
     thumbnails: string,
-    previewImage: string
+    previewImage: string,
+    collectionMeta: string,
+    batchCacheMeta: string,
+    batchVideoMeta: string
 }
 
 export type ClipPaths = {

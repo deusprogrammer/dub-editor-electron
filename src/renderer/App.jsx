@@ -34,6 +34,7 @@ let App = (props) => {
     const location = useLocation();
     const [interstitialState, setInterstitialState] = useAtom(interstitialAtom);
     const [game, setGame] = useState('rifftrax');
+    const [config, setConfig] = useState({});
 
     const changeGame = (newGame) => {
         setGame(newGame);
@@ -41,6 +42,33 @@ let App = (props) => {
             replace: true,
         });
     };
+
+    useEffect(() => {
+        getConfig();
+    }, []);
+
+    const getConfig = async () => {
+        const config = await window.api.send('getConfig');
+        setConfig(config);
+    };
+
+    if (!config) {
+        return <div>Loading Config</div>;
+    } else if (config && !config.mediaDirectory) {
+        return (
+            <div className="App">
+                <h1>Dub Launcher</h1>
+                <hr />
+                <div>{VERSION}</div>
+                <hr />
+                <Config
+                    onRefresh={() => {
+                        getConfig();
+                    }}
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="App">

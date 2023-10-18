@@ -1,6 +1,7 @@
 type Config = {
-    whatTheDubDirectory: string | null;
-    rifftraxDirectory: string | null;
+    whatTheDubDirectory: any;
+    rifftraxDirectory: any;
+    mediaDirectory: any;
     editor: string | null;
     isMac: boolean;
 };
@@ -8,6 +9,7 @@ type Config = {
 const defaultConfig: Config = {
     whatTheDubDirectory: null,
     rifftraxDirectory: null,
+    mediaDirectory: null,
     editor: "advanced",
     isMac: false,
 };

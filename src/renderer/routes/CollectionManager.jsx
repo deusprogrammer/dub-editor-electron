@@ -28,8 +28,6 @@ export default () => {
                 selected,
                 game
             );
-            console.log(JSON.stringify(previewImage));
-            console.log(previewImage.imageUrl);
             setPreviewImageBase64(previewImage.imageUrl);
         }
     };
@@ -105,6 +103,15 @@ export default () => {
         return (
             <div>
                 <h2>Pack Manager ({game})</h2>
+                <h3>Actions</h3>
+                <button
+                    type="button"
+                    onClick={() => {
+                        importZip();
+                    }}
+                >
+                    Import Clip Pack
+                </button>
                 <h3>Clip Packs</h3>
                 <table style={{ margin: 'auto' }}>
                     <tbody>
@@ -226,7 +233,7 @@ export default () => {
                         setEditingMetaData(true);
                     }}
                 >
-                    Edit Metadata
+                    More Settings
                 </button>
                 <div className="clip-pack-edit">
                     <div>

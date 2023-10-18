@@ -31,17 +31,6 @@ const Config = (props) => {
 
         if (filePath) {
             let newConfig = updateConfig(field, filePath);
-            let result = await window.api.send(
-                'fileExists',
-                filePath + '/StreamingAssets'
-            );
-
-            if (!result) {
-                setError(
-                    "The directory you set doesn't contain the StreamingAssets folder"
-                );
-                return;
-            }
             save(newConfig);
         }
     };
@@ -50,7 +39,9 @@ const Config = (props) => {
         <table style={{ margin: 'auto' }}>
             <tbody>
                 <tr>
-                    <td>Default Editor</td>
+                    <td style={{ fontWeight: 'bold', textAlign: 'left' }}>
+                        Default Editor
+                    </td>
                     <td>
                         <select
                             value={config.editor}
@@ -73,7 +64,45 @@ const Config = (props) => {
         <div>
             <h3>Application Config</h3>
             <div style={{ color: 'red' }}>{error}</div>
+            <table style={{ margin: 'auto' }}>
+                <tbody>
+                    <tr>
+                        <td style={{ fontWeight: 'bold', textAlign: 'left' }}>
+                            Media Directory
+                        </td>
+                        <td>
+                            <button
+                                onClick={() => {
+                                    openDialog('mediaDirectory');
+                                }}
+                            >
+                                Browse
+                            </button>
+                        </td>
+                        <td
+                            style={{
+                                textAlign: 'left',
+                                verticalAlign: 'middle',
+                            }}
+                        >
+                            {config.mediaDirectory
+                                ? config.mediaDirectory
+                                : 'None'}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
             {otherConfig}
+            {props.onRefresh ? (
+                <button
+                    onClick={() => {
+                        props.onRefresh();
+                    }}
+                    disabled={error || !config.mediaDirectory}
+                >
+                    Save
+                </button>
+            ) : null}
         </div>
     );
 };

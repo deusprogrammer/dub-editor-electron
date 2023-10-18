@@ -21,6 +21,7 @@ import JSZip from 'jszip';
 import { ClipPaths, DirectoryList } from './types';
 
 const ffmpeg = require('fluent-ffmpeg');
+const StreamZip = require('node-stream-zip');
 
 // Fuck ASAR, it's a piece of shit with shitty documentation and it doesn't work the same way in every OS.
 let baseDirectory =             __dirname.substring(0, __dirname.indexOf('app.asar'));
@@ -50,17 +51,16 @@ const HOME: string =
         ? process.env.HOME || '/'
         : `${process.env.HOMEDRIVE}${process.env.HOMEPATH}/AppData/Local/DubEditor`;
 const CONFIG_FILE: string =             `${HOME}/.dub-editor-config.json`;
-const COLLECTIONS_FILE: string =        `${HOME}/.dub-editor-collections.json`;
-const BATCH_CACHE_FILE: string =        `${HOME}/.dub-editor-batch-cache.json`;
+const COLLECTIONS_FILE: string =        '.dub-editor-collections.json';
+const BATCH_CACHE_FILE: string =        '.dub-editor-batch-cache.json';
 
-const BATCH_VIDEO_TEMP_FILE: string =   `${HOME}/.dub-editor-data/dub-editor-batch-tmp.mp4`;
-const CLIP_VIDEO_TEMP_FILE: string =    `${HOME}/.dub-editor-data/dub-editor-clip-tmp.mp4`;
+const BATCH_VIDEO_TEMP_FILE: string =   '.dub-editor-data/dub-editor-batch-tmp.mp4';
+const CLIP_VIDEO_TEMP_FILE: string =    '.dub-editor-data/dub-editor-clip-tmp.mp4';
 
-const DUB_EDITOR_DATA_DIRECTORY =       `${HOME}/.dub-editor-data`;
-const VIDEO_SUB_DIRECTORY =             `_VideoClips`;
-const SUBTITLE_SUB_DIRECTORY =          `_Subtitles`;
-const THUMBNAIL_SUB_DIRECTORY =         `_ThumbNails`;
-const PREVIEW_IMAGE_SUB_DIRECTORY =     `_PreviewImages`;
+const VIDEO_SUB_DIRECTORY =             '_VideoClips';
+const SUBTITLE_SUB_DIRECTORY =          '_Subtitles';
+const THUMBNAIL_SUB_DIRECTORY =         '_ThumbNails';
+const PREVIEW_IMAGE_SUB_DIRECTORY =     '_PreviewImages';
 
 export default class AppUpdater {
     constructor() {
@@ -71,10 +71,17 @@ export default class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
-let batchCache : any = {
+let defaultBatchCache : any = {
     clips: [],
-    video: null,
+    video: null
+}
+let batchCache : any = defaultBatchCache;
+
+let defaultCollections: any = {
+    whatthedub: {},
+    rifftrax: {},
 };
+let collections: { [key: string]: any } = defaultCollections;
 
 const convertMillisecondsToTimestamp = (milliseconds: number) => {
     let seconds = milliseconds / 1000;
@@ -86,50 +93,16 @@ const convertMillisecondsToTimestamp = (milliseconds: number) => {
     return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}.${ms.toString().padStart(3, "0")}`;
 }
 
-const createExtraDirectories = () => {
-    try {
-        // Create Rifftrax Directories
-        if (!fs.existsSync(path.join(DUB_EDITOR_DATA_DIRECTORY, 'rifftrax', VIDEO_SUB_DIRECTORY))) {
-            fs.mkdirSync(path.join(DUB_EDITOR_DATA_DIRECTORY, 'rifftrax', VIDEO_SUB_DIRECTORY), {recursive: true});
-        }
-
-        if (!fs.existsSync(path.join(DUB_EDITOR_DATA_DIRECTORY, 'rifftrax', SUBTITLE_SUB_DIRECTORY))) {
-            fs.mkdirSync(path.join(DUB_EDITOR_DATA_DIRECTORY, 'rifftrax', SUBTITLE_SUB_DIRECTORY), {recursive: true});
-        }
-
-        if (!fs.existsSync(path.join(DUB_EDITOR_DATA_DIRECTORY, 'rifftrax', THUMBNAIL_SUB_DIRECTORY))) {
-            fs.mkdirSync(path.join(DUB_EDITOR_DATA_DIRECTORY, 'rifftrax', THUMBNAIL_SUB_DIRECTORY), {recursive: true});
-        }
-
-        if (!fs.existsSync(path.join(DUB_EDITOR_DATA_DIRECTORY, 'rifftrax', PREVIEW_IMAGE_SUB_DIRECTORY))) {
-            fs.mkdirSync(path.join(DUB_EDITOR_DATA_DIRECTORY, 'rifftrax', PREVIEW_IMAGE_SUB_DIRECTORY), {recursive: true});
-        }
-    } catch (error) {
-        console.error(error);
-        console.error("Install directory for Rifftrax likely not configured correctly");
+const createMediaFolders = (game: string) => {
+    if (!config?.mediaDirectory) {
+        return;
     }
 
-    // Create What the Dub Directories
-    try {
-        if (!fs.existsSync(path.join(DUB_EDITOR_DATA_DIRECTORY, 'whatthedub', VIDEO_SUB_DIRECTORY))) {
-            fs.mkdirSync(path.join(DUB_EDITOR_DATA_DIRECTORY, 'whatthedub', VIDEO_SUB_DIRECTORY), {recursive: true});
-        }
-
-        if (!fs.existsSync(path.join(DUB_EDITOR_DATA_DIRECTORY, 'whatthedub', SUBTITLE_SUB_DIRECTORY))) {
-            fs.mkdirSync(path.join(DUB_EDITOR_DATA_DIRECTORY, 'whatthedub', SUBTITLE_SUB_DIRECTORY), {recursive: true});
-        }
-
-        if (!fs.existsSync(path.join(DUB_EDITOR_DATA_DIRECTORY, 'whatthedub', THUMBNAIL_SUB_DIRECTORY))) {
-            fs.mkdirSync(path.join(DUB_EDITOR_DATA_DIRECTORY, 'whatthedub', THUMBNAIL_SUB_DIRECTORY), {recursive: true});
-        }
-
-        if (!fs.existsSync(path.join(DUB_EDITOR_DATA_DIRECTORY, 'whatthedub', PREVIEW_IMAGE_SUB_DIRECTORY))) {
-            fs.mkdirSync(path.join(DUB_EDITOR_DATA_DIRECTORY, 'whatthedub', PREVIEW_IMAGE_SUB_DIRECTORY), {recursive: true});
-        }
-    } catch (error) {
-        console.error(error);
-        console.error("Install directory for What the Dub likely not configured correctly");
-    }
+    let {clips, subtitles, thumbnails, previewImage} = getDirectoriesForGame(game);
+    fs.mkdirSync(clips, {recursive: true});
+    fs.mkdirSync(subtitles, {recursive: true});
+    fs.mkdirSync(thumbnails, {recursive: true});
+    fs.mkdirSync(previewImage, {recursive: true});
 }
 
 const processVideo = (inputFilePath: string, outputFilePath: string, startTime: number, duration: number) => {
@@ -186,10 +159,25 @@ const createThumbnail = async (videoFilePath: string, thumbnailTime: string, thu
 
 const getDirectoriesForGame = (game: string) : DirectoryList => {
     return {
-        clips:          path.join(DUB_EDITOR_DATA_DIRECTORY, game, VIDEO_SUB_DIRECTORY),
-        subtitles:      path.join(DUB_EDITOR_DATA_DIRECTORY, game, SUBTITLE_SUB_DIRECTORY),
-        thumbnails:     path.join(DUB_EDITOR_DATA_DIRECTORY, game, THUMBNAIL_SUB_DIRECTORY),
-        previewImage:   path.join(DUB_EDITOR_DATA_DIRECTORY, game, PREVIEW_IMAGE_SUB_DIRECTORY)
+        clips:          path.join(config.mediaDirectory, game, VIDEO_SUB_DIRECTORY),
+        subtitles:      path.join(config.mediaDirectory, game, SUBTITLE_SUB_DIRECTORY),
+        thumbnails:     path.join(config.mediaDirectory, game, THUMBNAIL_SUB_DIRECTORY),
+        previewImage:   path.join(config.mediaDirectory, game, PREVIEW_IMAGE_SUB_DIRECTORY),
+        collectionMeta: path.join(config.mediaDirectory, COLLECTIONS_FILE),
+        batchCacheMeta: path.join(config.mediaDirectory, BATCH_CACHE_FILE),
+        batchVideoMeta: path.join(config.mediaDirectory, BATCH_VIDEO_TEMP_FILE),
+    }
+}
+
+const getConfigDirectories = () : DirectoryList => {
+    return {
+        clips:          '',
+        subtitles:      '',
+        thumbnails:     '',
+        previewImage:   '',
+        collectionMeta: path.join(config.mediaDirectory, COLLECTIONS_FILE),
+        batchCacheMeta: path.join(config.mediaDirectory, BATCH_CACHE_FILE),
+        batchVideoMeta: path.join(config.mediaDirectory, BATCH_VIDEO_TEMP_FILE),
     }
 }
 
@@ -202,6 +190,160 @@ const getClipPaths = (videoId: string, game: string): ClipPaths => {
         thumbnail: `${thumbnails}/${videoId}.jpg`
     }
 }
+
+const addToCollection = (
+    game: string,
+    collectionId: string,
+    videoIdList: Array<string>
+) => {
+    // If the collection isn't present, create a key and an empty array for it.
+    if (!(collectionId in collections[game])) {
+        collections[game][collectionId] = [];
+    }
+
+    videoIdList.forEach((videoId) => {
+        // Add video id to collection list if it's not already present.
+        if (!collections[game][collectionId].includes(videoId)) {
+            collections[game][collectionId].push(videoId);
+        }
+    });
+
+    const {collectionMeta} = getConfigDirectories();
+
+    console.log("WRITING TO " + collectionMeta);
+
+    // Store updated file
+    fs.writeFileSync(collectionMeta, JSON.stringify(collections, null, 5));
+    return collections[game];
+};
+
+const importZip = async (filePath: string, game: string) => {
+    // Extract video names from zip
+    const zip = new StreamZip.async({ file: filePath });
+    const entries = await zip.entries();
+
+    const videoDirectoryStack = ['StreamingAssets', 'VideoClips'];
+    const videoCorrectionStack = [];
+    let videoSource = '';
+    while (videoDirectoryStack.length > 0) {
+        let videoSearchDirectory = videoDirectoryStack.join('/');
+        let foundEntry: any = Object.values(entries).find((entry: any) =>
+            entry.name
+                .toLowerCase()
+                .startsWith(videoSearchDirectory.toLowerCase())
+        );
+        if (foundEntry) {
+            videoSource = foundEntry.name.substring(
+                0,
+                foundEntry.name.lastIndexOf('/')
+            );
+            break;
+        }
+        videoCorrectionStack.push(videoDirectoryStack.shift());
+    }
+
+    const subtitleDirectoryStack = ['StreamingAssets', 'Subtitles'];
+    const subtitleCorrectionStack = [];
+    let subtitleSource = '';
+    while (subtitleDirectoryStack.length > 0) {
+        let subtitleSearchDirectory = subtitleDirectoryStack.join('/');
+        let foundEntry: any = Object.values(entries).find((entry: any) =>
+            entry.name
+                .toLowerCase()
+                .startsWith(subtitleSearchDirectory.toLowerCase())
+        );
+        if (foundEntry) {
+            subtitleSource = foundEntry.name.substring(
+                0,
+                foundEntry.name.lastIndexOf('/')
+            );
+            break;
+        }
+        subtitleCorrectionStack.push(subtitleDirectoryStack.shift());
+    }
+
+    // Extract video files to resources folder
+    const sourceVideoDirectory = `${videoSource}/`;
+    const sourceSubtitlesDirectory = `${subtitleSource}/`;
+
+    const {clips: targetVideoDirectory, subtitles: targetSubtitlesDirectory, thumbnails: targetThumbNailsDirectory, previewImage} = getDirectoriesForGame(game);
+
+    Object.values(entries).forEach((entry: any) => console.log(entry.name));
+
+    // Try with standard directory names
+    await zip.extract(sourceVideoDirectory, targetVideoDirectory);
+    await zip.extract(sourceSubtitlesDirectory, targetSubtitlesDirectory);
+    await zip.extract('thumbnails', targetThumbNailsDirectory);
+
+    const videoIdList = Object.values(entries)
+        .filter(
+            (entry: any) =>
+                entry.name
+                    .toLowerCase()
+                    .startsWith(sourceVideoDirectory.toLowerCase()) &&
+                entry.name.endsWith('.mp4')
+        )
+        .map((entry: any) =>
+            entry.name.substring(
+                entry.name.lastIndexOf('/') + 1,
+                entry.name.lastIndexOf('.mp4')
+            )
+        );
+
+    // Rename videos so they will be treated as custom clips
+    const clipsDirectory = targetVideoDirectory;
+    const subsDirectory = targetSubtitlesDirectory;
+    const mismatchedIds: string[] = [];
+    videoIdList.forEach((videoId) => {
+        if (videoId.startsWith('_')) {
+            return;
+        }
+        if (
+            fs.existsSync(`${clipsDirectory}/${videoId}.mp4`) &&
+            fs.existsSync(`${subsDirectory}/${videoId}.srt`)
+        ) {
+            fs.renameSync(
+                `${clipsDirectory}/${videoId}.mp4`,
+                `${clipsDirectory}/_${videoId}.mp4`
+            );
+            fs.renameSync(
+                `${subsDirectory}/${videoId}.srt`,
+                `${subsDirectory}/_${videoId}.srt`
+            );
+        } else {
+            console.error('MISMATCHED FILES FOUND');
+            if (fs.existsSync(`${clipsDirectory}/${videoId}.mp4`)) {
+                fs.unlinkSync(`${clipsDirectory}/${videoId}.mp4`);
+            }
+            if (fs.existsSync(`${subsDirectory}/${videoId}.srt`)) {
+                fs.unlinkSync(`${subsDirectory}/${videoId}.srt`);
+            }
+            mismatchedIds.push(videoId);
+        }
+    });
+
+    // Create and add a collection
+    const collectionId: string = filePath.substring(
+        filePath.lastIndexOf('/') + 1,
+        filePath.lastIndexOf('.zip')
+    );
+
+    await zip.extract('preview.jpg', `${previewImage}/${collectionId}.jpg`)
+    await zip.close();
+
+    addToCollection(
+        game,
+        collectionId,
+        videoIdList
+            .filter((videoId: string) => !mismatchedIds.includes(videoId))
+            .map((videoId) => {
+                if (videoId.startsWith('_')) {
+                    return videoId;
+                }
+                return `_${videoId}`;
+            })
+    );
+};
 
 const exportToZip = async (
     filePath: string,
@@ -241,10 +383,7 @@ const exportToZip = async (
         } 
 
         if (!fs.existsSync(thumbFilePath)) {
-            // Create a thumbnail
-            const thumbnailTime = '00:00:01';
-
-            await createThumbnail(videoFilePath, thumbnailTime, thumbFilePath);
+            await createThumbnail(videoFilePath, '00:00:01', thumbFilePath);
         }
 
         const videoBase64: string = fs.readFileSync(videoFilePath, {
@@ -301,6 +440,53 @@ const deleteClip = (id: string, game: string) => {
     });
 };
 
+const createMetaDataFiles = () => {
+    if (!config.mediaDirectory) {
+        return;
+    }
+
+    if (!fs.existsSync(config.mediaDirectory)) {
+        fs.mkdirSync(config.mediaDirectory);
+    }
+
+    const {collectionMeta, batchCacheMeta} = getConfigDirectories();
+
+    // If config doesn't exist, then create it
+    if (!fs.existsSync(CONFIG_FILE)) {
+        fs.mkdirSync(HOME, { recursive: true });
+        fs.writeFileSync(CONFIG_FILE, Buffer.from(JSON.stringify(config, null, 5)));
+    } else {
+        config = JSON.parse(fs.readFileSync(CONFIG_FILE, {}).toString());
+    }
+
+    // If batch storage doesn't exist, then create it
+    if (!fs.existsSync(batchCacheMeta)) {
+        console.log("CREATING BATCH CACHE");
+        fs.mkdirSync(HOME, { recursive: true });
+        fs.writeFileSync(
+            batchCacheMeta,
+            Buffer.from(JSON.stringify(batchCache, null, 5))
+        );
+        batchCache = defaultBatchCache;
+    } else {
+        batchCache = JSON.parse(fs.readFileSync(batchCacheMeta, {}).toString());
+    }
+
+    // Load default collections, and if the file for collections doesn't exist create it
+    if (!fs.existsSync(collectionMeta)) {
+        console.log("CREATING COLLECTIONS");
+        fs.mkdirSync(HOME, { recursive: true });
+        fs.writeFileSync(
+            collectionMeta,
+            Buffer.from(JSON.stringify(collections, null, 5))
+        );
+        collections = defaultCollections;
+    } else {
+        console.log("READING COLLECTIONS");
+        collections = JSON.parse(fs.readFileSync(collectionMeta, {}).toString());
+    }
+}
+
 // Load default config
 let config = defaultConfig;
 if (process.platform === 'darwin') {
@@ -315,33 +501,7 @@ if (!fs.existsSync(CONFIG_FILE)) {
     config = JSON.parse(fs.readFileSync(CONFIG_FILE, {}).toString());
 }
 
-// If batch storage doesn't exist, then create it
-if (!fs.existsSync(BATCH_CACHE_FILE)) {
-    fs.mkdirSync(HOME, { recursive: true });
-    fs.writeFileSync(
-        BATCH_CACHE_FILE,
-        Buffer.from(JSON.stringify(batchCache, null, 5))
-    );
-} else {
-    batchCache = JSON.parse(fs.readFileSync(BATCH_CACHE_FILE, {}).toString());
-}
-
-// Load default collections, and if the file for collections doesn't exist create it
-let collections: { [key: string]: any } = {
-    whatthedub: {},
-    rifftrax: {},
-};
-if (!fs.existsSync(COLLECTIONS_FILE)) {
-    fs.mkdirSync(HOME, { recursive: true });
-    fs.writeFileSync(
-        COLLECTIONS_FILE,
-        Buffer.from(JSON.stringify(collections, null, 5))
-    );
-} else {
-    collections = JSON.parse(fs.readFileSync(COLLECTIONS_FILE, {}).toString());
-}
-
-createExtraDirectories();
+createMetaDataFiles();
 
 if (process.env.NODE_ENV === 'production') {
     const sourceMapSupport = require('source-map-support');
@@ -468,6 +628,9 @@ const createWindow = async () => {
     });
 };
 
+createMediaFolders('rifftrax');
+createMediaFolders('whatthedub');
+
 /**
  * Add event listeners...
  */
@@ -512,7 +675,10 @@ ipcMain.handle('updateConfig', (event, newConfig) => {
     console.log('CONFIG: ' + JSON.stringify(newConfig));
     config = newConfig;
     fs.writeFileSync(CONFIG_FILE, Buffer.from(JSON.stringify(config, null, 5)));
-    createExtraDirectories();
+    createMediaFolders('rifftrax');
+    createMediaFolders('whatthedub');
+    createMetaDataFiles();
+    
     return;
 });
 
@@ -737,8 +903,10 @@ ipcMain.handle('createCollection', (event, { collectionId, game }) => {
         collections[game][collectionId] = [];
     }
 
+    const {collectionMeta} = getConfigDirectories();
+
     // Store updated file
-    fs.writeFileSync(COLLECTIONS_FILE, JSON.stringify(collections, null, 5));
+    fs.writeFileSync(collectionMeta, JSON.stringify(collections, null, 5));
 
     return collections[game];
 });
@@ -764,11 +932,19 @@ ipcMain.handle(
             });
         }
 
+        const {previewImage} = getDirectoriesForGame(game);
+        const previewImagePath = path.join(previewImage, `${collectionId}.jpg`);
+        if (fs.existsSync(previewImagePath)) {
+            fs.unlinkSync(previewImagePath);
+        }
+        console.log("DELETING PREVIEW IMAGE: " + previewImagePath);
+
         delete collections[game][collectionId];
+        const {collectionMeta} = getConfigDirectories();
 
         // Store updated file
         fs.writeFileSync(
-            COLLECTIONS_FILE,
+            collectionMeta,
             JSON.stringify(collections, null, 5)
         );
 
@@ -791,8 +967,10 @@ ipcMain.handle('addToCollection', (event, { collectionId, videoId, game }) => {
         collections[game][collectionId].push(videoId);
     }
 
+    const {collectionMeta} = getConfigDirectories();
+
     // Store updated file
-    fs.writeFileSync(COLLECTIONS_FILE, JSON.stringify(collections, null, 5));
+    fs.writeFileSync(collectionMeta, JSON.stringify(collections, null, 5));
     return collections[game];
 });
 
@@ -814,9 +992,11 @@ ipcMain.handle(
             (element: string) => element !== videoId
         );
 
+        const {collectionMeta} = getConfigDirectories();
+
         // Store updated file
         fs.writeFileSync(
-            COLLECTIONS_FILE,
+            collectionMeta,
             JSON.stringify(collections, null, 5)
         );
         return collections[game];
@@ -906,6 +1086,16 @@ ipcMain.handle('setActive', async (event) => {
 });
 
 ipcMain.handle('importZip', async (event, game) => {
+    console.log('IMPORTING ZIP');
+    const response = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [{ name: 'Zip File', extensions: ['zip'] }],
+    });
+    if (!response || response.canceled) {
+        return null;
+    }
+    await importZip(response.filePaths[0], game);
+    return collections[game];
 });
 
 ipcMain.handle('disableVideos', async (event) => {
