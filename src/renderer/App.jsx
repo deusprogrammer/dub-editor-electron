@@ -27,7 +27,7 @@ import { interstitialAtom } from './atoms/interstitial.atom';
 import './App.css';
 import 'react-toastify/dist/ReactToastify.css';
 
-const VERSION = 'v2.0.0-beta';
+const VERSION = 'v2.1.0-beta';
 
 let App = (props) => {
     const navigate = useNavigate();
@@ -127,6 +127,7 @@ let App = (props) => {
                     >
                         About
                     </Link>
+                    |
                     <a
                         href="https://ko-fi.com/michaelcmain52278"
                         target="_blank"
