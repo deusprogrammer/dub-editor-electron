@@ -10,7 +10,7 @@
  */
 import path from 'path';
 import fs from 'fs';
-import { app, BrowserWindow, dialog, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, shell, ipcMain, protocol } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -18,12 +18,49 @@ import { resolveHtmlPath } from './util';
 
 import defaultConfig from './defaultConfig';
 import JSZip from 'jszip';
+import { ClipPaths, DirectoryList } from './types';
 
+const ffmpeg = require('fluent-ffmpeg');
 const StreamZip = require('node-stream-zip');
 
-const HOME : string = process.platform === 'darwin' ? process.env.HOME || "/" : `${process.env.HOMEDRIVE}${process.env.HOMEPATH}/AppData/Local/DubEditor`;
-const CONFIG_FILE : string = `${HOME}/.dub-editor-config.json`;
-const COLLECTIONS_FILE : string = `${HOME}/.dub-editor-collections.json`;
+// Fuck ASAR, it's a piece of shit with shitty documentation and it doesn't work the same way in every OS.
+let baseDirectory =             __dirname.substring(0, __dirname.indexOf('app.asar'));
+let ffmpegPath =                path.join(baseDirectory, 'node_modules/ffmpeg-static/ffmpeg');
+let defaultPreviewFilePath =    path.join(baseDirectory, 'images/preview.jpg');
+
+if (process.platform === "win32") {
+    ffmpegPath += ".exe";
+}
+
+ffmpeg.setFfmpegPath(ffmpegPath);
+
+console.log("HOME DIRECTORY: " + __dirname);
+console.log("FFMPEG PATH: " + ffmpegPath);
+console.log("DEFAULT PREVIEW IMAGE: " + defaultPreviewFilePath);
+
+if (!fs.existsSync(ffmpegPath)) {
+    console.error("Unable to locate FFMPEG");
+}
+
+if (!fs.existsSync(defaultPreviewFilePath)) {
+    console.error("Unable to locate default preview image");
+}
+
+const HOME: string =
+    process.platform === 'darwin'
+        ? process.env.HOME || '/'
+        : `${process.env.HOMEDRIVE}${process.env.HOMEPATH}/AppData/Local/DubEditor`;
+const CONFIG_FILE: string =             `${HOME}/.dub-editor-config.v2.json`;
+const COLLECTIONS_FILE: string =        '.dub-editor-collections.v2.json';
+const BATCH_CACHE_FILE: string =        '.dub-editor-batch-cache.v2.json';
+
+const BATCH_VIDEO_TEMP_FILE: string =   '.dub-editor-data.v2/dub-editor-batch-tmp.mp4';
+const CLIP_VIDEO_TEMP_FILE: string =    '.dub-editor-data.v2/dub-editor-clip-tmp.mp4';
+
+const VIDEO_SUB_DIRECTORY =             'VideoClips';
+const SUBTITLE_SUB_DIRECTORY =          'Subtitles';
+const THUMBNAIL_SUB_DIRECTORY =         'ThumbNails';
+const PREVIEW_IMAGE_SUB_DIRECTORY =     'PreviewImages';
 
 export default class AppUpdater {
     constructor() {
@@ -34,87 +71,131 @@ export default class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
+let defaultBatchCache : any = {
+    clips: [],
+    video: null
+}
+let batchCache : any = defaultBatchCache;
 
-const createClipName = (title : string, clipNumber : number) => {
-    return title.replace(" ", "_") + `-Clip${`${clipNumber}`.padStart(3, "0")}`;
+let defaultCollections: any = {
+    whatthedub: {},
+    rifftrax: {},
+};
+let collections: { [key: string]: any } = defaultCollections;
+
+const convertMillisecondsToTimestamp = (milliseconds: number) => {
+    let seconds = milliseconds / 1000;
+    let h = Math.floor(seconds / 3600);
+    let m = Math.floor((seconds % 3600) / 60);
+    let s = Math.floor(seconds % 60);
+    let ms = Math.floor((seconds - Math.trunc(seconds)) * 1000);
+
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}.${ms.toString().padStart(3, "0")}`;
 }
 
-const importZip = async (filePath : string, game : string) => {
-    let directory = null;
-    if (game === "rifftrax") {
-        directory = config.rifftraxDirectory;
-    } else if (game === "whatthedub") {
-        directory = config.whatTheDubDirectory;
-    } else {
-        return;
-    }
-    
-    // Extract video names from zip
-    const zip = new StreamZip.async({ file: filePath });
-    const entries = await zip.entries();
-    const videoIdList = Object.values(entries).filter((entry : any) => entry.name.startsWith("StreamingAssets/VideoClips") && entry.name.endsWith(".mp4")).map((entry : any) => entry.name.substring(entry.name.lastIndexOf("/") + 1, entry.name.lastIndexOf(".mp4")));
-
-    // Extract video files to resources folder
-    const gameDirectory = `${directory}/`.replace("~", HOME);
-    await zip.extract(null, gameDirectory);
-    await zip.close();
-
-    // Rename videos so they will be treated as custom clips
-    const clipsDirectory = `${directory}/StreamingAssets/VideoClips`.replace("~", HOME);
-    const subsDirectory = `${directory}/StreamingAssets/Subtitles`.replace("~", HOME);
-    videoIdList.forEach(videoId => {
-        if (videoId.startsWith("_")) {
-            return;
-        }
-        fs.renameSync(`${clipsDirectory}/${videoId}.mp4`, `${clipsDirectory}/_${videoId}.mp4`);
-        fs.renameSync(`${subsDirectory}/${videoId}.srt`, `${subsDirectory}/_${videoId}.srt`);
-    });
-
-    // Create and add a collection
-    const collectionId : string = filePath.substring(filePath.lastIndexOf("/") + 1, filePath.lastIndexOf(".zip"));
-    addToCollection(game, collectionId, videoIdList.map(videoId => {
-        if (videoId.startsWith("_")) {
-            return videoId;
-        }
-        return `_${videoId}`;
-    }));
-}
-
-const exportToZip = async (filePath : string, collectionId : string, game : string) => {
-    let directory = null;
-    if (game === "rifftrax") {
-        directory = config.rifftraxDirectory;
-    } else if (game === "whatthedub") {
-        directory = config.whatTheDubDirectory;
-    } else {
+const createMediaFolders = (game: string) => {
+    if (!config?.mediaDirectory) {
         return;
     }
 
-    const clipsDirectory = `${directory}/StreamingAssets/VideoClips`.replace("~", HOME);
-    const subsDirectory = `${directory}/StreamingAssets/Subtitles`.replace("~", HOME);
-    const zipFilePath = `${filePath}/${collectionId}.zip`;
-
-    const zip : JSZip = new JSZip();
-    zip.file(zipFilePath);
-    
-    let root = zip.folder("StreamingAssets");
-    collections[game][collectionId].forEach((videoId : string) => {
-        let videoFilePath : string = `${clipsDirectory}/${videoId}.mp4`;
-        let subFilePath : string  = `${subsDirectory}/${videoId}.srt`;
-        const videoBase64 : string = fs.readFileSync(videoFilePath, {encoding: 'base64'});
-        const subtitlesBase64 : string = fs.readFileSync(subFilePath, {encoding: 'base64'});
-        // @ts-ignore
-        root.folder("VideoClips").file(`${videoId}.mp4`, videoBase64, {base64: true});
-        // @ts-ignore
-        root.folder("Subtitles").file(`${videoId}.srt`, subtitlesBase64, {base64: true});
-    });
-
-    zip
-        .generateNodeStream({streamFiles:true})
-        .pipe(fs.createWriteStream(zipFilePath));
+    let {clips, subtitles, thumbnails, previewImage} = getDirectoriesForGame(game);
+    fs.mkdirSync(clips, {recursive: true});
+    fs.mkdirSync(subtitles, {recursive: true});
+    fs.mkdirSync(thumbnails, {recursive: true});
+    fs.mkdirSync(previewImage, {recursive: true});
 }
 
-const addToCollection = (game : string, collectionId : string, videoIdList : Array<string>) => {
+const processVideo = (inputFilePath: string, outputFilePath: string, startTime: number, duration: number) => {
+    return new Promise((resolve, reject) => {
+        console.log("PROCESSING " + inputFilePath);
+        console.log("STORING TO " + outputFilePath);
+        // Process video
+        let ts = convertMillisecondsToTimestamp(startTime);
+        ffmpeg(inputFilePath)
+            .videoCodec("libx264")
+            .setStartTime(ts)
+            .setDuration(duration / 1000)
+            .output(outputFilePath)
+            .on('end', function(err: any) {
+                if(!err) { 
+                    resolve(0);
+                }
+            })
+            .on('error', function(err: any){
+                reject(err);
+            }).run();
+    });
+}
+
+const trimAndWriteVideo = async (inputFilePath: string, outputFilePath: string, startTime: number, endTime: number) => {
+    try {
+        await processVideo(inputFilePath, outputFilePath, startTime, endTime - startTime);
+    } catch (err) {
+        console.error("Unable to trim video: " + err);
+        throw new Error("Unable to trim video: " + err);
+    }
+}
+
+const createClipName = (title: string, clipNumber: number) => {
+    return '_' + title.replace(' ', '_') + `-Clip${`${clipNumber}`.padStart(3, '0')}`;
+};
+
+const createThumbnail = async (videoFilePath: string, thumbnailTime: string, thumbFilePath: string) => {
+    return new Promise((resolve, reject) => {
+        ffmpeg(videoFilePath)
+            .seekInput(thumbnailTime)
+            .frames(1)
+            .output(thumbFilePath)
+            .on('end', () => {
+                resolve(0);
+            })
+            .on('error', (err : any) => {
+                console.error("Failed to create thumbnail: " + err);
+                reject();
+            })
+            .run();
+    });
+}
+
+const getDirectoriesForGame = (game: string) : DirectoryList => {
+    return {
+        clips:          path.join(config.mediaDirectory, game, VIDEO_SUB_DIRECTORY),
+        subtitles:      path.join(config.mediaDirectory, game, SUBTITLE_SUB_DIRECTORY),
+        thumbnails:     path.join(config.mediaDirectory, game, THUMBNAIL_SUB_DIRECTORY),
+        previewImage:   path.join(config.mediaDirectory, game, PREVIEW_IMAGE_SUB_DIRECTORY),
+        collectionMeta: path.join(config.mediaDirectory, COLLECTIONS_FILE),
+        batchCacheMeta: path.join(config.mediaDirectory, BATCH_CACHE_FILE),
+        batchVideoMeta: path.join(config.mediaDirectory, BATCH_VIDEO_TEMP_FILE),
+    }
+}
+
+const getConfigDirectories = () : DirectoryList => {
+    return {
+        clips:          '',
+        subtitles:      '',
+        thumbnails:     '',
+        previewImage:   '',
+        collectionMeta: path.join(config.mediaDirectory, COLLECTIONS_FILE),
+        batchCacheMeta: path.join(config.mediaDirectory, BATCH_CACHE_FILE),
+        batchVideoMeta: path.join(config.mediaDirectory, BATCH_VIDEO_TEMP_FILE),
+    }
+}
+
+const getClipPaths = (videoId: string, game: string): ClipPaths => {
+    let {clips, subtitles, thumbnails} = getDirectoriesForGame(game);
+
+    return {
+        clip: `${clips}/${videoId}.mp4`,
+        subtitle: `${subtitles}/${videoId}.srt`,
+        thumbnail: `${thumbnails}/${videoId}.jpg`
+    }
+}
+
+const addToCollection = (
+    game: string,
+    collectionId: string,
+    videoIdList: Array<string>
+) => {
     // If the collection isn't present, create a key and an empty array for it.
     if (!(collectionId in collections[game])) {
         collections[game][collectionId] = [];
@@ -125,79 +206,302 @@ const addToCollection = (game : string, collectionId : string, videoIdList : Arr
         if (!collections[game][collectionId].includes(videoId)) {
             collections[game][collectionId].push(videoId);
         }
-    })
+    });
+
+    const {collectionMeta} = getConfigDirectories();
+
+    console.log("WRITING TO " + collectionMeta);
 
     // Store updated file
-    fs.writeFileSync(COLLECTIONS_FILE, JSON.stringify(collections, null, 5));
+    fs.writeFileSync(collectionMeta, JSON.stringify(collections, null, 5));
     return collections[game];
-}
+};
 
-const toggleAllVideos = (game : string, isActive : boolean, except : Array<String> = []) => {
-    let clipsDirectory : string = "";
-    let subsDirectory : string = "";
-    if (game === "rifftrax") {
-        clipsDirectory = `${config.rifftraxDirectory}/StreamingAssets/VideoClips`.replace("~", HOME);
-        subsDirectory = `${config.rifftraxDirectory}/StreamingAssets/Subtitles`.replace("~", HOME);
-    } else if (game === "whatthedub") {
-        clipsDirectory = `${config.whatTheDubDirectory}/StreamingAssets/VideoClips`.replace("~", HOME);
-        subsDirectory = `${config.rifftraxDirectory}/StreamingAssets/Subtitles`.replace("~", HOME);
-    } else {
+const importZip = async (filePath: string, game: string) => {
+    // Extract video names from zip
+    const zip = new StreamZip.async({ file: filePath });
+    const entries = await zip.entries();
+
+    const videoDirectoryStack = ['StreamingAssets', 'VideoClips'];
+    const videoCorrectionStack = [];
+    let videoSource = '';
+    while (videoDirectoryStack.length > 0) {
+        let videoSearchDirectory = videoDirectoryStack.join('/');
+        let foundEntry: any = Object.values(entries).find((entry: any) =>
+            entry.name
+                .toLowerCase()
+                .startsWith(videoSearchDirectory.toLowerCase())
+        );
+        if (foundEntry) {
+            videoSource = foundEntry.name.substring(
+                0,
+                foundEntry.name.lastIndexOf('/')
+            );
+            break;
+        }
+        videoCorrectionStack.push(videoDirectoryStack.shift());
+    }
+
+    const subtitleDirectoryStack = ['StreamingAssets', 'Subtitles'];
+    const subtitleCorrectionStack = [];
+    let subtitleSource = '';
+    while (subtitleDirectoryStack.length > 0) {
+        let subtitleSearchDirectory = subtitleDirectoryStack.join('/');
+        let foundEntry: any = Object.values(entries).find((entry: any) =>
+            entry.name
+                .toLowerCase()
+                .startsWith(subtitleSearchDirectory.toLowerCase())
+        );
+        if (foundEntry) {
+            subtitleSource = foundEntry.name.substring(
+                0,
+                foundEntry.name.lastIndexOf('/')
+            );
+            break;
+        }
+        subtitleCorrectionStack.push(subtitleDirectoryStack.shift());
+    }
+
+    // Extract video files to resources folder
+    const sourceVideoDirectory = `${videoSource}/`;
+    const sourceSubtitlesDirectory = `${subtitleSource}/`;
+
+    const {clips: targetVideoDirectory, subtitles: targetSubtitlesDirectory, thumbnails: targetThumbNailsDirectory, previewImage} = getDirectoriesForGame(game);
+
+    Object.values(entries).forEach((entry: any) => console.log(entry.name));
+
+    // Try with standard directory names
+    await zip.extract(sourceVideoDirectory, targetVideoDirectory);
+    await zip.extract(sourceSubtitlesDirectory, targetSubtitlesDirectory);
+    await zip.extract('thumbnails', targetThumbNailsDirectory);
+
+    const videoIdList = Object.values(entries)
+        .filter(
+            (entry: any) =>
+                entry.name
+                    .toLowerCase()
+                    .startsWith(sourceVideoDirectory.toLowerCase()) &&
+                entry.name.endsWith('.mp4')
+        )
+        .map((entry: any) =>
+            entry.name.substring(
+                entry.name.lastIndexOf('/') + 1,
+                entry.name.lastIndexOf('.mp4')
+            )
+        );
+
+    // Rename videos so they will be treated as custom clips
+    const clipsDirectory = targetVideoDirectory;
+    const subsDirectory = targetSubtitlesDirectory;
+    const mismatchedIds: string[] = [];
+    videoIdList.forEach((videoId) => {
+        if (videoId.startsWith('_')) {
+            return;
+        }
+        if (
+            fs.existsSync(`${clipsDirectory}/${videoId}.mp4`) &&
+            fs.existsSync(`${subsDirectory}/${videoId}.srt`)
+        ) {
+            fs.renameSync(
+                `${clipsDirectory}/${videoId}.mp4`,
+                `${clipsDirectory}/_${videoId}.mp4`
+            );
+            fs.renameSync(
+                `${subsDirectory}/${videoId}.srt`,
+                `${subsDirectory}/_${videoId}.srt`
+            );
+        } else {
+            console.error('MISMATCHED FILES FOUND');
+            if (fs.existsSync(`${clipsDirectory}/${videoId}.mp4`)) {
+                fs.unlinkSync(`${clipsDirectory}/${videoId}.mp4`);
+            }
+            if (fs.existsSync(`${subsDirectory}/${videoId}.srt`)) {
+                fs.unlinkSync(`${subsDirectory}/${videoId}.srt`);
+            }
+            mismatchedIds.push(videoId);
+        }
+    });
+
+    // Create and add a collection
+    const collectionId: string = filePath.substring(
+        filePath.lastIndexOf('/') + 1,
+        filePath.lastIndexOf('.zip')
+    );
+
+    await zip.extract('preview.jpg', `${previewImage}/${collectionId}.jpg`)
+    await zip.close();
+
+    addToCollection(
+        game,
+        collectionId,
+        videoIdList
+            .filter((videoId: string) => !mismatchedIds.includes(videoId))
+            .map((videoId) => {
+                if (videoId.startsWith('_')) {
+                    return videoId;
+                }
+                return `_${videoId}`;
+            })
+    );
+};
+
+const exportToZip = async (
+    filePath: string,
+    collectionId: string,
+    game: string
+) => {
+    const zipFilePath = `${filePath}/${collectionId}.zip`;
+
+    const zip: JSZip = new JSZip();
+    zip.file(zipFilePath);
+
+    let root = zip.folder('');
+
+    // Store preview image
+    const {previewImage: previewImageDirectory} = getDirectoriesForGame(game);
+    let previewImagePath: string = `${previewImageDirectory}/${collectionId}.jpg`;
+
+    if (!fs.existsSync(previewImagePath)) {
+        previewImagePath = defaultPreviewFilePath;
+    }
+
+    const previewImageBase64: string = fs.readFileSync(previewImagePath, {
+        encoding: 'base64',
+    });
+
+    // @ts-ignore
+    root.file('preview.jpg', previewImageBase64, {
+        base64: true,
+    });
+
+    for (let videoId of collections[game][collectionId]) {
+        const {clip: videoFilePath, subtitle: subFilePath, thumbnail: thumbFilePath} = getClipPaths(videoId, game);
+        
+        if (!fs.existsSync(videoFilePath) || !fs.existsSync(subFilePath)) {
+            console.log("SKIPPING " + videoId);
+            continue;
+        } 
+
+        if (!fs.existsSync(thumbFilePath)) {
+            await createThumbnail(videoFilePath, '00:00:01', thumbFilePath);
+        }
+
+        const videoBase64: string = fs.readFileSync(videoFilePath, {
+            encoding: 'base64',
+        });
+        const subtitlesBase64: string = fs.readFileSync(subFilePath, {
+            encoding: 'base64',
+        });
+        const thumbNailBase64: string = fs.readFileSync(thumbFilePath, {
+            encoding: 'base64',
+        });
+        // @ts-ignore
+        root.folder('videoclips').file(`${videoId}.mp4`, videoBase64, {
+            base64: true,
+        });
+        // @ts-ignore
+        root.folder('subtitles').file(`${videoId}.srt`, subtitlesBase64, {
+            base64: true,
+        });
+        // @ts-ignore
+        root.folder('thumbnails').file(`${videoId}.jpg`, thumbNailBase64, {
+            base64: true,
+        });
+    };
+
+    zip.generateNodeStream({ streamFiles: true }).pipe(
+        fs.createWriteStream(zipFilePath)
+    );
+};
+
+const deleteClip = (id: string, game: string) => {
+    console.log('DELETING ' + id + ' FOR GAME ' + game);
+
+    const {clip: videoFilePath, subtitle: subFilePath} = getClipPaths(id, game);
+
+    console.log('DELETING ' + videoFilePath);
+    console.log('DELETING ' + subFilePath);
+
+    // Delete video files
+    if (fs.existsSync(videoFilePath)) {
+        fs.unlinkSync(videoFilePath);
+    }
+
+    // Delete subtitle files
+    if (fs.existsSync(subFilePath)) {
+        fs.unlinkSync(subFilePath);
+    }
+
+    // Remove references to video in collections
+    Object.keys(collections[game]).forEach((collectionId) => {
+        collections[game][collectionId] = collections[game][
+            collectionId
+        ].filter((videoId: string) => videoId !== id);
+    });
+};
+
+const createMetaDataFiles = () => {
+    if (!config.mediaDirectory) {
         return;
     }
 
-    const files : Array<string> = fs.readdirSync(clipsDirectory);
-    const fileObjects : Array<any> = files.filter(file => file.endsWith(".mp4") || file.endsWith(".mp4.disabled")).map((file) => {return {_id: file.substring(0, file.lastIndexOf(".mp4")), name: file.replace(/_/g, " ").substring(0, file.lastIndexOf(".mp4")), game, disabled: file.endsWith(".disabled")}});
-    fileObjects.forEach(({_id : id}) => {
-        const videoFilePath = `${clipsDirectory}/${id}.mp4`;
-        const subFilePath = `${subsDirectory}/${id}.srt`;
-        if (except.includes(id)) {
-            return;
-        }
-        console.log(`${isActive ? "Enabling" : "Disabling"} video with id ${id}`)
-        try {
-            if(isActive) {
-                fs.renameSync(`${videoFilePath}.disabled`, videoFilePath);
-                fs.renameSync(`${subFilePath}.disabled`, subFilePath);
-            } else {
-                fs.renameSync(videoFilePath, `${videoFilePath}.disabled`);
-                fs.renameSync(subFilePath, `${subFilePath}.disabled`);
-            }
-        } catch (e) {
-        }
-    });
+    if (!fs.existsSync(config.mediaDirectory)) {
+        fs.mkdirSync(config.mediaDirectory);
+    }
+
+    const {collectionMeta, batchCacheMeta} = getConfigDirectories();
+
+    // If config doesn't exist, then create it
+    if (!fs.existsSync(CONFIG_FILE)) {
+        fs.mkdirSync(HOME, { recursive: true });
+        fs.writeFileSync(CONFIG_FILE, Buffer.from(JSON.stringify(config, null, 5)));
+    } else {
+        config = JSON.parse(fs.readFileSync(CONFIG_FILE, {}).toString());
+    }
+
+    // If batch storage doesn't exist, then create it
+    if (!fs.existsSync(batchCacheMeta)) {
+        console.log("CREATING BATCH CACHE");
+        fs.mkdirSync(HOME, { recursive: true });
+        fs.writeFileSync(
+            batchCacheMeta,
+            Buffer.from(JSON.stringify(batchCache, null, 5))
+        );
+        batchCache = defaultBatchCache;
+    } else {
+        batchCache = JSON.parse(fs.readFileSync(batchCacheMeta, {}).toString());
+    }
+
+    // Load default collections, and if the file for collections doesn't exist create it
+    if (!fs.existsSync(collectionMeta)) {
+        console.log("CREATING COLLECTIONS");
+        fs.mkdirSync(HOME, { recursive: true });
+        fs.writeFileSync(
+            collectionMeta,
+            Buffer.from(JSON.stringify(collections, null, 5))
+        );
+        collections = defaultCollections;
+    } else {
+        console.log("READING COLLECTIONS");
+        collections = JSON.parse(fs.readFileSync(collectionMeta, {}).toString());
+    }
 }
 
 // Load default config
 let config = defaultConfig;
 if (process.platform === 'darwin') {
-    config.whatTheDubDirectory = "~/Library/Application Support/Steam/steamapps/common/WhatTheDub/WhatTheDub.app/Contents/Resources/Data";
-    config.rifftraxDirectory = "~/Library/Application Support/Steam/steamapps/common/RiffTraxTheGame/RiffTraxTheGame.app/Contents/Resources/Data";
     config.isMac = true;
 }
 
 // If config doesn't exist, then create it
 if (!fs.existsSync(CONFIG_FILE)) {
-    fs.mkdirSync(HOME, {recursive: true});
+    fs.mkdirSync(HOME, { recursive: true });
     fs.writeFileSync(CONFIG_FILE, Buffer.from(JSON.stringify(config, null, 5)));
 } else {
     config = JSON.parse(fs.readFileSync(CONFIG_FILE, {}).toString());
 }
 
-// Load default collections, and if the file for collections doesn't exist create it
-let collections : {[key: string] : any} = {
-    "whatthedub": {},
-    "rifftrax": {}
-};
-if (!fs.existsSync(COLLECTIONS_FILE)) {
-    fs.mkdirSync(HOME, {recursive: true});
-    fs.writeFileSync(COLLECTIONS_FILE, Buffer.from(JSON.stringify(collections, null, 5)));
-} else {
-    collections = JSON.parse(fs.readFileSync(COLLECTIONS_FILE, {}).toString());
-}
-
-// Toggle all files back on
-toggleAllVideos("rifftrax", true);
-toggleAllVideos("whatthedub", true);
+createMetaDataFiles();
 
 if (process.env.NODE_ENV === 'production') {
     const sourceMapSupport = require('source-map-support');
@@ -208,7 +512,7 @@ const isDebug =
     process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
 
 // if (isDebug) {
-    require('electron-debug')();
+require('electron-debug')();
 // }
 
 const installExtensions = async () => {
@@ -221,7 +525,7 @@ const installExtensions = async () => {
             extensions.map((name) => installer[name]),
             forceDownload
         )
-        .catch(console.log);
+        .catch(console.error);
 };
 
 const createWindow = async () => {
@@ -243,23 +547,30 @@ const createWindow = async () => {
         height: 1080,
         icon: getAssetPath('icon.png'),
         webPreferences: {
-        preload: app.isPackaged
-            ? path.join(__dirname, 'preload.js')
-            : path.join(__dirname, '../../.erb/dll/preload.js'),
+            preload: app.isPackaged
+                ? path.join(__dirname, 'preload.js')
+                : path.join(__dirname, '../../.erb/dll/preload.js'),
         },
+    });
+
+    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+        shell.openExternal(url);
+        return { action: 'deny' };
     });
 
     mainWindow.loadURL(resolveHtmlPath('index.html'));
 
     mainWindow.on('ready-to-show', () => {
         if (!mainWindow) {
-        throw new Error('"mainWindow" is not defined');
+            throw new Error('"mainWindow" is not defined');
         }
         if (process.env.START_MINIMIZED) {
-        mainWindow.minimize();
+            mainWindow.minimize();
         } else {
-        mainWindow.show();
+            mainWindow.show();
         }
+
+        // mainWindow.webContents.openDevTools();
     });
 
     mainWindow.on('closed', () => {
@@ -275,10 +586,50 @@ const createWindow = async () => {
         return { action: 'deny' };
     });
 
-    // Remove this if your app does not use auto updates
-    // eslint-disable-next-line
-    new AppUpdater();
+    protocol.interceptFileProtocol('localfile', (request, callback) => {
+        let filePath = request.url.substring(12);
+        
+        console.log("FILE PATH: " + filePath);
+
+        callback(filePath);
+    });
+
+    protocol.interceptFileProtocol('game', (request, callback) => {
+        let url = request.url.substring(7);
+        let pattern = /^(rifftrax|whatthedub)\/(.+)\.(mp4|srt)\.*(disabled)*$/;
+
+        if (url === "batch.tmp.mp4") {
+            return callback(BATCH_VIDEO_TEMP_FILE);
+        } else if (url === "clip.tmp.mp4") {
+            return callback(CLIP_VIDEO_TEMP_FILE);
+        }
+
+        let match : any = url.match(pattern);
+
+        if (!match) {
+            return null;
+        }
+
+        let game = match[1];
+        let id = match[2];
+        let ext = match[3];
+
+        const {clip, subtitle, thumbnail} = getClipPaths(id, game);
+
+        if (ext === 'mp4') {
+            callback(clip);
+        } else if (ext === 'srt') {
+            callback(subtitle);
+        } else if (ext === 'jpg') {
+            callback(thumbnail);
+        } else {
+            callback(clip);
+        }
+    });
 };
+
+createMediaFolders('rifftrax');
+createMediaFolders('whatthedub');
 
 /**
  * Add event listeners...
@@ -292,50 +643,42 @@ app.on('window-all-closed', () => {
     }
 });
 
-app
-    .whenReady()
+app.whenReady()
     .then(() => {
-            createWindow();
-            app.on('activate', () => {
-                // On macOS it's common to re-create a window in the app when the
-                // dock icon is clicked and there are no other windows open.
-                if (mainWindow === null) createWindow();
-            });
+        createWindow();
+        app.on('activate', () => {
+            // On macOS it's common to re-create a window in the app when the
+            // dock icon is clicked and there are no other windows open.
+            if (mainWindow === null) createWindow();
+        });
     })
-  .catch(console.log);
+    .catch(console.error);
 
 // Bridged functionality
 
 ipcMain.handle('fileExists', (event, filePath) => {
     const exists = fs.existsSync(filePath);
-    console.log(`${filePath} exists?  ${exists}`);
     return exists;
 });
 
-ipcMain.handle('clipExists', (event, {title, clipNumber, game}) => {
-    let directory = null;
-    if (game === "rifftrax" && config.rifftraxDirectory) {
-        directory = config.rifftraxDirectory.replace("~", HOME);
-    } else if (game === "whatthedub" && config.whatTheDubDirectory) {
-        directory = config.whatTheDubDirectory.replace("~", HOME);
-    } else {
-        return false;
-    }
+ipcMain.handle('clipExists', (event, { title, clipNumber, game }) => {
+    const id = createClipName(title, clipNumber);
+    const {clip: videoFilePath} = getClipPaths(id, game);
 
-    const baseFileName = createClipName(title, clipNumber);
-    const clipsDirectory = `${directory}/StreamingAssets/VideoClips`.replace("~", HOME);
-    const videoFilePath = `${clipsDirectory}/_${baseFileName}.mp4`;
-    const exists = fs.existsSync(videoFilePath) || fs.existsSync(videoFilePath + ".disabled");
-
-    console.log(`${videoFilePath} exists? ${exists}`);
+    const exists =
+        fs.existsSync(videoFilePath);
 
     return exists;
 });
 
 ipcMain.handle('updateConfig', (event, newConfig) => {
-    console.log("CONFIG: " + JSON.stringify(newConfig));
+    console.log('CONFIG: ' + JSON.stringify(newConfig));
     config = newConfig;
     fs.writeFileSync(CONFIG_FILE, Buffer.from(JSON.stringify(config, null, 5)));
+    createMediaFolders('rifftrax');
+    createMediaFolders('whatthedub');
+    createMetaDataFiles();
+    
     return;
 });
 
@@ -343,110 +686,216 @@ ipcMain.handle('getConfig', () => {
     return config;
 });
 
-ipcMain.handle('getVideos', (event, game) => {
-    let clipsDirectory = null;
-    if (game === "rifftrax") {
-        clipsDirectory = `${config.rifftraxDirectory}/StreamingAssets/VideoClips`.replace("~", HOME);
-    } else if (game === "whatthedub") {
-        clipsDirectory = `${config.whatTheDubDirectory}/StreamingAssets/VideoClips`.replace("~", HOME);
+ipcMain.handle('storeBatch', async (event, { clips, video, title }) => {
+    batchCache = {
+        video,
+        title,
+        clipNumber: 1,
+        clips,
+    };
+
+    // Write cache file
+    fs.writeFileSync(
+        BATCH_CACHE_FILE,
+        Buffer.from(JSON.stringify(batchCache, null, 5))
+    );
+});
+
+ipcMain.handle('hasBatch', (event) => {
+    return batchCache.clips.length;
+});
+
+ipcMain.handle('nextBatchClip', (event) => {
+    return {
+        title: batchCache.title,
+        clipNumber: batchCache.clipNumber,
+        clip: batchCache.clips[0],
+        video: batchCache.video
+    };
+});
+
+ipcMain.handle('processBatchClip', async (event, {videoSource, subtitles, title, clipNumber, game}) => {
+    console.log(
+        `STORING ${title}-${clipNumber} for game ${game} with subtitles ${subtitles}`
+    );
+
+    let clip : any = batchCache.clips[0];
+
+    if (clip) {
+        let id = createClipName(title, clipNumber);
+        const {clip: videoFilePath, subtitle: subFilePath} = getClipPaths(id, game);
+
+        // Write video clip
+        await trimAndWriteVideo(videoSource.replace("localfile://", ""), videoFilePath, clip.startTime, clip.endTime);
+
+        // Write matching subtitles
+        fs.writeFileSync(subFilePath, subtitles);
+
+        // Remove the clip from batch on completion
+        batchCache.clips.shift();
+        batchCache.clipNumber++;
+        fs.writeFileSync(
+            BATCH_CACHE_FILE,
+            Buffer.from(JSON.stringify(batchCache, null, 5))
+        );
+
+        return id;
     } else {
-        return [];
+        throw new Error("No batches left to process");
     }
+});
+
+ipcMain.handle('clearBatchCache', (event) => {
+    batchCache = {
+        clips: [],
+        video: null,
+    };
+    fs.writeFileSync(
+        BATCH_CACHE_FILE,
+        Buffer.from(JSON.stringify(batchCache, null, 5))
+    );
+});
+
+ipcMain.handle('getVideos', (event, game) => {
+    const {clips: clipsDirectory} = getDirectoriesForGame(game);
 
     const files = fs.readdirSync(clipsDirectory);
-    const fileObjects : Array<any> = files.filter(file => file.endsWith(".mp4") || file.endsWith(".mp4.disabled")).map((file) => {return {_id: file.substring(0, file.lastIndexOf(".mp4")), name: file.replace(/_/g, " ").substring(0, file.lastIndexOf(".mp4")), game, disabled: file.endsWith(".disabled")}});
+    const fileObjects: Array<any> = files
+        .filter(
+            (file) => file.endsWith('.mp4')
+        )
+        .map((file) => {
+            return {
+                _id: file.substring(0, file.lastIndexOf('.mp4')),
+                name: file
+                    .replace(/_/g, ' ')
+                    .substring(0, file.lastIndexOf('.mp4')),
+                game,
+                disabled: false,
+            };
+        });
     return fileObjects;
 });
 
-ipcMain.handle('getVideo', (event, {id, game}) => {
-    console.log("Opening: " + id + " from game " + game);
+ipcMain.handle('getVideo', (event, { id, game }) => {
+    console.log('OPENING: ' + id + ' from game ' + game);
 
-    let directory = null;
-    if (game === "rifftrax") {
-        directory = config.rifftraxDirectory;
-    } else if (game === "whatthedub") {
-        directory = config.whatTheDubDirectory;
-    } else {
-        return [];
-    }
-    
-    const clipsDirectory : string = `${directory}/StreamingAssets/VideoClips`.replace("~", HOME);
-    const subsDirectory : string = `${directory}/StreamingAssets/Subtitles`.replace("~", HOME);
-    const videoFilePath : string = `${clipsDirectory}/${id}.mp4`;
-    const subFilePath : string = `${subsDirectory}/${id}.srt`;
+    const {clip: videoFilePath, subtitle: subFilePath} = getClipPaths(id, game);
 
-    const videoBase64 : string = fs.readFileSync(videoFilePath, {encoding: 'base64'});
-    const subtitles : string = fs.readFileSync(subFilePath, {encoding: 'base64'});
+    const videoBase64: string = fs.readFileSync(videoFilePath, {
+        encoding: 'base64',
+    });
+    const subtitles: string = fs.readFileSync(subFilePath, {
+        encoding: 'base64',
+    });
 
     return {
-        name: id.replace(/_/g, " "),
+        name: id.replace(/_/g, ' '),
         videoUrl: `data:video/mp4;base64,${videoBase64}`,
         subtitles: [],
-        srtBase64: subtitles 
-    }
+        srtBase64: subtitles,
+    };
 });
 
-ipcMain.handle('storeVideo', (event, {base64ByteStream, subtitles, title, clipNumber, game}) => {
-    console.log(`STORING ${title}-${clipNumber} for game ${game} with subtitles ${subtitles}`);
+ipcMain.handle('getPreviewImage', (event, { collectionId, game }) => {
+    console.log('OPENING: ' + collectionId + ' from game ' + game);
 
-    let directory = null;
-    if (game === "rifftrax") {
-        directory = config.rifftraxDirectory;
-    } else if (game === "whatthedub") {
-        directory = config.whatTheDubDirectory;
-    } else {
-        return;
+    const {previewImage} = getDirectoriesForGame(game);
+
+    const previewImagePath: string = path.join(previewImage, `${collectionId}.jpg`);
+
+    console.log("Opening " + previewImagePath);
+
+    if (!fs.existsSync(previewImagePath)) {
+        console.log("File doesn't exist?");
+        return {
+            name: 'Unknown',
+            imageUrl: null
+        }
     }
 
-    let baseFileName = createClipName(title, clipNumber);
+    const previewImageBase64: string = fs.readFileSync(previewImagePath, {
+        encoding: 'base64',
+    });
 
-    const clipsDirectory = `${directory}/StreamingAssets/VideoClips`.replace("~", HOME);
-    const subsDirectory = `${directory}/StreamingAssets/Subtitles`.replace("~", HOME);
-    const videoFilePath = `${clipsDirectory}/_${baseFileName}.mp4`;
-    const subFilePath = `${subsDirectory}/_${baseFileName}.srt`;
-
-    console.log("SAVING TO " + videoFilePath + "\n" + subFilePath);
-
-    fs.writeFileSync(videoFilePath, Buffer.from(base64ByteStream, "base64"));
-    fs.writeFileSync(subFilePath, subtitles);
+    return {
+        name: collectionId.replace(/_/g, ' '),
+        imageUrl: `data:image/jpeg;base64,${previewImageBase64}`
+    };
 });
 
-ipcMain.handle('deleteVideo', (event, {id, game, isActive}) => {
-    console.log("DELETING " + id + " FOR GAME " + game);
+ipcMain.handle(
+    'storeVideo',
+    (event, { videoSource, subtitles, title, clipNumber, game }) => {
+        console.log(
+            `STORING ${title}-${clipNumber} for game ${game} with subtitles ${subtitles}`
+        );
 
-    let directory = null;
-    if (game === "rifftrax") {
-        directory = config.rifftraxDirectory;
-    } else if (game === "whatthedub") {
-        directory = config.whatTheDubDirectory;
-    } else {
-        return;
+        let id = createClipName(title, clipNumber);
+
+        const {clip: videoFilePath, subtitle: subFilePath, thumbnail: thumbNailPath} = getClipPaths(id, game);
+
+        console.log('SAVING TO ' + videoFilePath + '\n' + subFilePath);
+
+        fs.copyFileSync(videoSource.replace("localfile://", ""), videoFilePath);
+        fs.writeFileSync(subFilePath, subtitles);
+
+        // Create a thumbnail
+        const thumbnailTime = '00:00:01';
+        createThumbnail(videoFilePath, thumbnailTime, thumbNailPath);
+
+        return id;
     }
+);
 
-    // Generate file paths
-    const clipsDirectory = `${directory}/StreamingAssets/VideoClips`.replace("~", HOME);
-    const subsDirectory = `${directory}/StreamingAssets/Subtitles`.replace("~", HOME);
-    let videoFilePath = `${clipsDirectory}/${id}.mp4`;
-    let subFilePath = `${subsDirectory}/${id}.srt`;
+ipcMain.handle(
+    'storePreviewImage',
+    (event, { collectionId, imageBase64, game }) => {
+        console.log(
+            `STORING ${collectionId} for game ${game}`
+        );
 
-    // If the video isn't active it will have a .disabled extension
-    if (!isActive) {
-        videoFilePath += ".disabled";
-        subFilePath += ".disabled";
+        const {previewImage} = getDirectoriesForGame(game);
+
+        // Store the videos disabled by default to allow testing via collection
+        const previewImagePath = path.join(previewImage, `${collectionId}.jpg`);
+
+        console.log('SAVING TO ' + previewImagePath);
+
+        fs.writeFileSync(previewImagePath, imageBase64.split(';base64,').pop(), {encoding: 'base64'});
     }
+);
 
-    // Delete files
-    console.log("DELETING " + videoFilePath + "\n" + subFilePath);
-    fs.unlinkSync(videoFilePath);
-    fs.unlinkSync(subFilePath);
+ipcMain.handle(
+    'storeTempVideo',
+    (event, {videoArrayBuffer, type}) => {
+        console.log(
+            `STORING TEMP CLIP VIDEO`
+        );
 
-    // Remove references to video in collections
-    Object.keys(collections[game]).forEach(collectionId => {
-        collections[game][collectionId] = collections[game][collectionId].filter((videoId : string) => videoId !== id);
-    })
+        if (type === "clip") {
+            fs.writeFileSync(
+                CLIP_VIDEO_TEMP_FILE,
+                Buffer.from(videoArrayBuffer)
+            );
+            return `app://clip.tmp.mp4`;
+        } else if (type === "batch") {
+            fs.writeFileSync(
+                BATCH_VIDEO_TEMP_FILE,
+                Buffer.from(videoArrayBuffer)
+            );
+            return `app://batch.tmp.mp4`;
+        }
+
+        return null;        
+    }
+);
+
+ipcMain.handle('deleteVideo', (event, { id, game }) => {
+    deleteClip(id, game);
 });
 
-ipcMain.handle('createCollection', (event, {collectionId, game}) => {
+ipcMain.handle('createCollection', (event, { collectionId, game }) => {
     console.log(`CREATING COLLECTION ${collectionId} for game ${game}`);
 
     // If the collection isn't present, create a key and an empty array for it.
@@ -454,30 +903,59 @@ ipcMain.handle('createCollection', (event, {collectionId, game}) => {
         collections[game][collectionId] = [];
     }
 
+    const {collectionMeta} = getConfigDirectories();
+
     // Store updated file
-    fs.writeFileSync(COLLECTIONS_FILE, JSON.stringify(collections, null, 5));
+    fs.writeFileSync(collectionMeta, JSON.stringify(collections, null, 5));
 
     return collections[game];
 });
 
-ipcMain.handle('deleteCollection', (event, {collectionId, game}) => {
-    console.log(`DELETING COLLECTION ${collectionId} for game ${game}`);
+ipcMain.handle(
+    'deleteCollection',
+    (event, { collectionId, game, deleteFiles }) => {
+        console.log(`DELETING COLLECTION ${collectionId} for game ${game}`);
 
-    // If the collection isn't present, create a key and an empty array for it.
-    if (!(collectionId in collections[game]) && collectionId !== "Originals") {
-        return;
+        // If the collection isn't present, create a key and an empty array for it.
+        if (
+            !(collectionId in collections[game]) &&
+            collectionId !== 'Originals'
+        ) {
+            return;
+        }
+
+        // If delete files, delete files with collection
+        if (deleteFiles) {
+            console.log('DELETING FILES FROM COLLECTION');
+            collections[game][collectionId].forEach((id: string) => {
+                deleteClip(id, game);
+            });
+        }
+
+        const {previewImage} = getDirectoriesForGame(game);
+        const previewImagePath = path.join(previewImage, `${collectionId}.jpg`);
+        if (fs.existsSync(previewImagePath)) {
+            fs.unlinkSync(previewImagePath);
+        }
+        console.log("DELETING PREVIEW IMAGE: " + previewImagePath);
+
+        delete collections[game][collectionId];
+        const {collectionMeta} = getConfigDirectories();
+
+        // Store updated file
+        fs.writeFileSync(
+            collectionMeta,
+            JSON.stringify(collections, null, 5)
+        );
+
+        return collections[game];
     }
+);
 
-    delete collections[game][collectionId];
-
-    // Store updated file
-    fs.writeFileSync(COLLECTIONS_FILE, JSON.stringify(collections, null, 5));
-
-    return collections[game];
-});
-
-ipcMain.handle('addToCollection', (event, {collectionId, videoId, game}) => {
-    console.log(`ADDING ${videoId} for game ${game} to collection ${collectionId}`);
+ipcMain.handle('addToCollection', (event, { collectionId, videoId, game }) => {
+    console.log(
+        `ADDING ${videoId} for game ${game} to collection ${collectionId}`
+    );
 
     // If the collection isn't present, create a key and an empty array for it.
     if (!(collectionId in collections[game])) {
@@ -489,49 +967,74 @@ ipcMain.handle('addToCollection', (event, {collectionId, videoId, game}) => {
         collections[game][collectionId].push(videoId);
     }
 
-    // Store updated file
-    fs.writeFileSync(COLLECTIONS_FILE, JSON.stringify(collections, null, 5));
-    return collections[game];
-});
-
-ipcMain.handle('removeFromCollection', (event, {collectionId, videoId, game}) => {
-    console.log(`REMOVING ${videoId} for game ${game} to collection ${collectionId}`);
-
-    // If the collection isn't present, return immediately.
-    if (!(collectionId in collections[game])) {
-        return;
-    }
-
-    // Filter out videoId that's being removed.
-    collections[game][collectionId].filter((element : string) => element !== videoId);
+    const {collectionMeta} = getConfigDirectories();
 
     // Store updated file
-    fs.writeFileSync(COLLECTIONS_FILE, JSON.stringify(collections, null, 5));
+    fs.writeFileSync(collectionMeta, JSON.stringify(collections, null, 5));
     return collections[game];
 });
 
-ipcMain.handle('renameCollection', (event, {oldCollectionId, newCollectionId, game}) => {
-    console.log(`RENAME ${oldCollectionId} for game ${game} to ${newCollectionId}`);
+ipcMain.handle(
+    'removeFromCollection',
+    (event, { collectionId, videoId, game }) => {
+        console.log(
+            `REMOVING ${videoId} for game ${game} from collection ${collectionId}`
+        );
 
-    // If the collection isn't present or the new name is already in use, return immediately.
-    if (!(oldCollectionId in collections) || newCollectionId in collections) {
-        return;
+        // If the collection isn't present, return immediately.
+        if (!(collectionId in collections[game])) {
+            console.log("COLLECTION NOT PRESENT");
+            return;
+        }
+
+        // Filter out videoId that's being removed.
+        collections[game][collectionId] = collections[game][collectionId].filter(
+            (element: string) => element !== videoId
+        );
+
+        const {collectionMeta} = getConfigDirectories();
+
+        // Store updated file
+        fs.writeFileSync(
+            collectionMeta,
+            JSON.stringify(collections, null, 5)
+        );
+        return collections[game];
     }
+);
 
-    // Transfer data from one key to the other.
-    let collectionData = collections[game][oldCollectionId];
-    collections[game][newCollectionId] = collectionData;
-    delete collections[game][oldCollectionId];
+ipcMain.handle(
+    'renameCollection',
+    (event, { oldCollectionId, newCollectionId, game }) => {
+        console.log(
+            `RENAME ${oldCollectionId} for game ${game} to ${newCollectionId}`
+        );
 
-    return collections[game];
-});
+        // If the collection isn't present or the new name is already in use, return immediately.
+        if (
+            !(oldCollectionId in collections) ||
+            newCollectionId in collections
+        ) {
+            return;
+        }
 
-ipcMain.handle('exportCollection', async (event, {collectionId, game}) => {
-    const response = await dialog.showOpenDialog({properties: ['openDirectory', 'createDirectory'] });
+        // Transfer data from one key to the other.
+        let collectionData = collections[game][oldCollectionId];
+        collections[game][newCollectionId] = collectionData;
+        delete collections[game][oldCollectionId];
+
+        return collections[game];
+    }
+);
+
+ipcMain.handle('exportCollection', async (event, { collectionId, game }) => {
+    const response = await dialog.showOpenDialog({
+        properties: ['openDirectory', 'createDirectory'],
+    });
     if (response.canceled) {
         return null;
     }
-    
+
     exportToZip(response.filePaths[0], collectionId, game);
 });
 
@@ -540,7 +1043,9 @@ ipcMain.handle('getCollections', (event, game) => {
 });
 
 ipcMain.handle('openDialog', async () => {
-    const response = await dialog.showOpenDialog({properties: ['openDirectory', 'createDirectory'] });
+    const response = await dialog.showOpenDialog({
+        properties: ['openDirectory', 'createDirectory'],
+    });
     if (!response.canceled) {
         return response.filePaths[0];
     } else {
@@ -548,43 +1053,50 @@ ipcMain.handle('openDialog', async () => {
     }
 });
 
-ipcMain.handle('setActive', async (event, {id, game, isActive}) => {
-    console.log("TOGGLING " + id + " in game " + game + " to " + isActive);
-
-    let directory = null;
-    if (game === "rifftrax") {
-        directory = config.rifftraxDirectory;
-    } else if (game === "whatthedub") {
-        directory = config.whatTheDubDirectory;
+ipcMain.handle('openVideoFile', async () => {
+    const response = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [
+            {name: "Clips", extensions: ["mp4"]}
+        ]
+    });
+    if (!response.canceled) {
+        return response.filePaths[0];
     } else {
-        return;
-    }
-    const clipsDirectory = `${directory}/StreamingAssets/VideoClips`.replace("~", HOME);
-    const subsDirectory = `${directory}/StreamingAssets/Subtitles`.replace("~", HOME);
-    const videoFilePath = `${clipsDirectory}/${id}.mp4`;
-    const subFilePath = `${subsDirectory}/${id}.srt`;
-
-    if(isActive) {
-        fs.renameSync(`${videoFilePath}.disabled`, videoFilePath);
-        fs.renameSync(`${subFilePath}.disabled`, subFilePath);
-    } else {
-        fs.renameSync(videoFilePath, `${videoFilePath}.disabled`);
-        fs.renameSync(subFilePath, `${subFilePath}.disabled`);
+        return null;
     }
 });
 
+ipcMain.handle('openImageFile', async () => {
+    const response = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [
+            {name: "Clips", extensions: ["jpg"]}
+        ]
+    });
+    if (!response.canceled) {
+        return response.filePaths[0];
+    } else {
+        return null;
+    }
+});
+
+ipcMain.handle('setActive', async (event) => {
+
+});
+
 ipcMain.handle('importZip', async (event, game) => {
-    console.log("IMPORTING ZIP");
-    const response = await dialog.showOpenDialog({properties: ['openFile'], filters: [{ name: 'Zip File', extensions: ['zip']}]});
-    if (response.canceled) {
+    console.log('IMPORTING ZIP');
+    const response = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [{ name: 'Zip File', extensions: ['zip'] }],
+    });
+    if (!response || response.canceled) {
         return null;
     }
     await importZip(response.filePaths[0], game);
     return collections[game];
 });
 
-ipcMain.handle('disableVideos', async (event, {game, except}) => {
-    console.log("DISABLING ALL VIDEOS EXCEPT " + JSON.stringify(except) + " in game " + game);
-    toggleAllVideos(game, true);
-    toggleAllVideos(game, false, except);
+ipcMain.handle('disableVideos', async (event) => {
 });

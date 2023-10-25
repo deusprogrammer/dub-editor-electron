@@ -1,0 +1,25 @@
+.help-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: teal;
+    color: white;
+    padding: 10px;
+}
+
+.hidden {
+    display: none;
+}
+
+.help-button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    width: 25px;
+    height: 25px;
+    border-radius: 25px;
+    color: white;
+    background-color: teal;
+}

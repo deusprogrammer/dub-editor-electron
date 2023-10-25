@@ -1,18 +1,18 @@
 {
-  "name": "electron-react-boilerplate",
-  "version": "4.6.0",
-  "description": "A foundation for scalable desktop apps",
-  "license": "MIT",
-  "author": {
-    "name": "Electron React Boilerplate Maintainers",
-    "email": "electronreactboilerplate@gmail.com",
-    "url": "https://github.com/electron-react-boilerplate"
-  },
-  "main": "./dist/main/main.js",
-  "scripts": {
-    "electron-rebuild": "node -r ts-node/register ../../.erb/scripts/electron-rebuild.js",
-    "postinstall": "npm run electron-rebuild && npm run link-modules",
-    "link-modules": "node -r ts-node/register ../../.erb/scripts/link-modules.ts"
-  },
-  "dependencies": {}
+    "name": "dub-editor-electron",
+    "version": "2.2.0-beta",
+    "description": "A dub editor for What the Dub and Rifftrax games by Wide Right Studios",
+    "license": "MIT",
+    "author": {
+        "name": "Michael C. Main",
+        "email": "deusprogrammer@gmail.com",
+        "url": "https://deusprogrammer.com/util/wtd-tool"
+    },
+    "main": "./dist/main/main.js",
+    "scripts": {
+        "electron-rebuild": "node -r ts-node/register ../../.erb/scripts/electron-rebuild.js",
+        "postinstall": "npm run electron-rebuild && npm run link-modules",
+        "link-modules": "node -r ts-node/register ../../.erb/scripts/link-modules.ts"
+    },
+    "dependencies": {}
 }
