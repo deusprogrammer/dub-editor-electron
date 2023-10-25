@@ -34,6 +34,8 @@ if (process.platform === "win32") {
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
+Object.assign(console, log.functions);
+
 console.log("HOME DIRECTORY: " + __dirname);
 console.log("FFMPEG PATH: " + ffmpegPath);
 console.log("DEFAULT PREVIEW IMAGE: " + defaultPreviewFilePath);
@@ -324,7 +326,7 @@ const importZip = async (filePath: string, game: string) => {
 
     // Create and add a collection
     const collectionId: string = filePath.substring(
-        filePath.lastIndexOf('/') + 1,
+        filePath.lastIndexOf(path.sep) + 1,
         filePath.lastIndexOf('.zip')
     );
 
