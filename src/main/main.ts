@@ -14,7 +14,6 @@ import { app, BrowserWindow, dialog, shell, ipcMain, protocol } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
-import { resolveHtmlPath } from './util';
 
 import defaultConfig from './defaultConfig';
 import JSZip from 'jszip';
@@ -50,9 +49,9 @@ const HOME: string =
     process.platform === 'darwin'
         ? process.env.HOME || '/'
         : `${process.env.HOMEDRIVE}${process.env.HOMEPATH}/AppData/Local/DubEditor`;
-const CONFIG_FILE: string =             `${HOME}/.dub-editor-config.json`;
-const COLLECTIONS_FILE: string =        '.dub-editor-collections.json';
-const BATCH_CACHE_FILE: string =        '.dub-editor-batch-cache.json';
+const CONFIG_FILE: string =             `${HOME}/.dub-editor-config.v2.json`;
+const COLLECTIONS_FILE: string =        '.dub-editor-collections.v2.json';
+const BATCH_CACHE_FILE: string =        '.dub-editor-batch-cache.v2.json';
 
 const BATCH_VIDEO_TEMP_FILE: string =   '.dub-editor-data/dub-editor-batch-tmp.mp4';
 const CLIP_VIDEO_TEMP_FILE: string =    '.dub-editor-data/dub-editor-clip-tmp.mp4';

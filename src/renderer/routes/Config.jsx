@@ -1,4 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import HelpButton from 'renderer/components/HelpButton';
+
+const WORKSPACE_HELP_TEXT = (
+    <>
+        <h3>Workspace Directory</h3>
+        <p>
+            This directory is used to store the clips and subtitles you are
+            working on. It will prevent your work from getting overwritten if
+            you reinstall either game.
+        </p>
+    </>
+);
 
 const Config = (props) => {
     const [config, setConfig] = useState({});
@@ -68,7 +80,8 @@ const Config = (props) => {
                 <tbody>
                     <tr>
                         <td style={{ fontWeight: 'bold', textAlign: 'left' }}>
-                            Media Directory
+                            Workspace Directory{' '}
+                            <HelpButton helpText={WORKSPACE_HELP_TEXT} />
                         </td>
                         <td>
                             <button
