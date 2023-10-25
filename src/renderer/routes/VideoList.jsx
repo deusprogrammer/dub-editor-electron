@@ -80,7 +80,15 @@ let VideoList = () => {
                 let collection = collections[key];
                 return (
                     <div>
-                        <h4>{key}</h4>
+                        <h4
+                            style={{
+                                position: 'sticky',
+                                top: '0px',
+                                backgroundColor: 'white',
+                            }}
+                        >
+                            {key}
+                        </h4>
                         <table
                             className="clip-table"
                             style={{ margin: 'auto' }}

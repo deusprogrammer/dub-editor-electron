@@ -1,4 +1,28 @@
 import React, { useState, useEffect } from 'react';
+import HelpButton from 'renderer/components/HelpButton';
+
+const WORKSPACE_HELP_TEXT = (
+    <>
+        <h4>Workspace Directory</h4>
+        <p style={{ fontSize: '0.8rem' }}>
+            This directory is where you store works in progress before you
+            either export the clip pack to use in Steamworkshop or the launcher.
+            Do not use either game install directory for this.
+        </p>
+    </>
+);
+
+const EDITOR_HELP_TEXT = (
+    <>
+        <h4>Editor</h4>
+        <p style={{ fontSize: '0.8rem' }}>
+            This selects the editor you wish to utilize. The advanced editor
+            looks more like a full on video editting tool and allows you to
+            perform batch processing on systems that support it. The simple
+            editor is just the bare essentials and some prefer it.
+        </p>
+    </>
+);
 
 const Config = (props) => {
     const [config, setConfig] = useState({});
@@ -40,7 +64,8 @@ const Config = (props) => {
             <tbody>
                 <tr>
                     <td style={{ fontWeight: 'bold', textAlign: 'left' }}>
-                        Default Editor
+                        Default Editor{' '}
+                        <HelpButton helpText={EDITOR_HELP_TEXT} />
                     </td>
                     <td>
                         <select
@@ -68,7 +93,8 @@ const Config = (props) => {
                 <tbody>
                     <tr>
                         <td style={{ fontWeight: 'bold', textAlign: 'left' }}>
-                            Media Directory
+                            Workspace Directory{' '}
+                            <HelpButton helpText={WORKSPACE_HELP_TEXT} />
                         </td>
                         <td>
                             <button

@@ -50,17 +50,17 @@ const HOME: string =
     process.platform === 'darwin'
         ? process.env.HOME || '/'
         : `${process.env.HOMEDRIVE}${process.env.HOMEPATH}/AppData/Local/DubEditor`;
-const CONFIG_FILE: string =             `${HOME}/.dub-editor-config.json`;
-const COLLECTIONS_FILE: string =        '.dub-editor-collections.json';
-const BATCH_CACHE_FILE: string =        '.dub-editor-batch-cache.json';
+const CONFIG_FILE: string =             `${HOME}/.dub-editor-config.v2.json`;
+const COLLECTIONS_FILE: string =        '.dub-editor-collections.v2.json';
+const BATCH_CACHE_FILE: string =        '.dub-editor-batch-cache.v2.json';
 
-const BATCH_VIDEO_TEMP_FILE: string =   '.dub-editor-data/dub-editor-batch-tmp.mp4';
-const CLIP_VIDEO_TEMP_FILE: string =    '.dub-editor-data/dub-editor-clip-tmp.mp4';
+const BATCH_VIDEO_TEMP_FILE: string =   '.dub-editor-data.v2/dub-editor-batch-tmp.mp4';
+const CLIP_VIDEO_TEMP_FILE: string =    '.dub-editor-data.v2/dub-editor-clip-tmp.mp4';
 
-const VIDEO_SUB_DIRECTORY =             '_VideoClips';
-const SUBTITLE_SUB_DIRECTORY =          '_Subtitles';
-const THUMBNAIL_SUB_DIRECTORY =         '_ThumbNails';
-const PREVIEW_IMAGE_SUB_DIRECTORY =     '_PreviewImages';
+const VIDEO_SUB_DIRECTORY =             'VideoClips';
+const SUBTITLE_SUB_DIRECTORY =          'Subtitles';
+const THUMBNAIL_SUB_DIRECTORY =         'ThumbNails';
+const PREVIEW_IMAGE_SUB_DIRECTORY =     'PreviewImages';
 
 export default class AppUpdater {
     constructor() {

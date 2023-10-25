@@ -3,6 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router';
 import { toast } from 'react-toastify';
 import ImageSelector from 'renderer/components/ImageSelector';
+import { handleInterstitial } from 'renderer/components/interstitial/Interstitial';
+import { useAtom } from 'jotai';
+import { interstitialAtom } from 'renderer/atoms/interstitial.atom';
 
 export default () => {
     const { game } = useParams();
@@ -11,7 +14,9 @@ export default () => {
     const [collections, setCollections] = useState({ _originals: [] });
     const [selected, setSelected] = useState(null);
     const [previewImageBase64, setPreviewImageBase64] = useState(null);
-    const [editingMetaData, setEditingMetaData] = useState(false);
+    const [editMode, setEditMode] = useState('clips');
+
+    const [, setInterstitialState] = useAtom(interstitialAtom);
 
     useEffect(() => {
         loadData();
@@ -76,19 +81,33 @@ export default () => {
         window.open(`steam://run/${gameId}`);
     };
 
-    const exportCollection = (collectionId) => {
-        window.api.send('exportCollection', { game, collectionId });
+    const exportCollection = async (collectionId) => {
+        await handleInterstitial(
+            window.api.send('exportCollection', { game, collectionId }),
+            (isOpen) => {
+                setInterstitialState({
+                    isOpen,
+                    message: 'Exporting Clip Pack...',
+                });
+            }
+        );
         toast('Exporting clip pack...', { type: 'info' });
     };
 
     const importZip = async () => {
-        toast('Importing clip pack...', { type: 'info' });
-        const collectionMap = await window.api.send('importZip', game);
+        const collectionMap = await handleInterstitial(
+            window.api.send('importZip', game),
+            (isOpen) => {
+                setInterstitialState({
+                    isOpen,
+                    message: 'Importing Clip Pack...',
+                });
+            }
+        );
         if (!collectionMap) {
             return;
         }
         setCollections(collectionMap);
-        toast('Imported new clip pack!', { type: 'info' });
     };
 
     const changePreviewImage = async (base64ImagePayload) => {
@@ -98,6 +117,51 @@ export default () => {
             game
         );
     };
+
+    let menuOptions = (
+        <>
+            <button
+                onClick={() => {
+                    setSelected(false);
+                    setEditMode('clips');
+                }}
+            >
+                Back to Collection List
+            </button>
+            <button
+                className={editMode === 'clips' ? 'selected' : ''}
+                onClick={() => {
+                    setEditMode('clips');
+                }}
+            >
+                Clips
+            </button>
+            <button
+                className={editMode === 'preview-image' ? 'selected' : ''}
+                onClick={() => {
+                    setEditMode('preview-image');
+                }}
+            >
+                Preview Image
+            </button>
+            <button
+                className={editMode === 'custom-sfx' ? 'selected' : ''}
+                onClick={() => {
+                    setEditMode('custom-sfx');
+                }}
+            >
+                Custom SFX
+            </button>
+            <button
+                className={editMode === 'end-cards' ? 'selected' : ''}
+                onClick={() => {
+                    setEditMode('end-cards');
+                }}
+            >
+                End Cards
+            </button>
+        </>
+    );
 
     if (!selected) {
         return (
@@ -187,20 +251,11 @@ export default () => {
                 </table>
             </div>
         );
-    } else if (selected && editingMetaData) {
-        return (
-            <div>
-                <br />
-                <button
-                    type="button"
-                    onClick={() => {
-                        setEditingMetaData(false);
-                    }}
-                >
-                    Back to Collection Editor
-                </button>
+    } else {
+        if (editMode === 'preview-image') {
+            return (
                 <div>
-                    <h2>Preview Image</h2>
+                    {menuOptions}
                     <ImageSelector
                         className="preview-image"
                         src={previewImageBase64}
@@ -208,83 +263,32 @@ export default () => {
                         onChange={changePreviewImage}
                     />
                 </div>
+            );
+        } else if (editMode === 'clips') {
+            let collectionId = selected;
+            return (
                 <div>
-                    <h2>Ending Movies</h2>
-                    <p>Coming Soon!</p>
-                </div>
-            </div>
-        );
-    } else {
-        let collectionId = selected;
-        return (
-            <div>
-                <br />
-                <button
-                    type="button"
-                    onClick={() => {
-                        setSelected(null);
-                    }}
-                >
-                    Back to Collection List
-                </button>
-                <button
-                    type="button"
-                    onClick={() => {
-                        setEditingMetaData(true);
-                    }}
-                >
-                    More Settings
-                </button>
-                <div className="clip-pack-edit">
-                    <div>
-                        <h2>Clip Pack {collectionId}</h2>
-                        <table style={{ textAlign: 'center', margin: 'auto' }}>
-                            {collections[collectionId].map((videoId) => {
-                                return (
-                                    <tr>
-                                        <td>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    removeFromCollection(
-                                                        collectionId,
-                                                        videoId
-                                                    );
-                                                }}
-                                            >
-                                                -
-                                            </button>
-                                        </td>
-                                        <td>{videoId.replace(/_/g, ' ')}</td>
-                                    </tr>
-                                );
-                            })}
-                        </table>
-                    </div>
-                    <div>
-                        <h2>Videos Not in Clip Pack</h2>
-                        <table style={{ textAlign: 'center', margin: 'auto' }}>
-                            {videos
-                                .filter(
-                                    (video) =>
-                                        !collections[collectionId].includes(
-                                            video._id
-                                        ) && video._id.startsWith('_')
-                                )
-                                .map(({ _id: videoId }) => {
+                    {menuOptions}
+                    <div className="clip-pack-edit">
+                        <div>
+                            <h2>Clip Pack {collectionId}</h2>
+                            <table
+                                style={{ textAlign: 'center', margin: 'auto' }}
+                            >
+                                {collections[collectionId].map((videoId) => {
                                     return (
                                         <tr>
                                             <td>
                                                 <button
                                                     type="button"
                                                     onClick={() => {
-                                                        addToCollection(
+                                                        removeFromCollection(
                                                             collectionId,
                                                             videoId
                                                         );
                                                     }}
                                                 >
-                                                    +
+                                                    -
                                                 </button>
                                             </td>
                                             <td>
@@ -293,10 +297,54 @@ export default () => {
                                         </tr>
                                     );
                                 })}
-                        </table>
+                            </table>
+                        </div>
+                        <div>
+                            <h2>Videos Not in Clip Pack</h2>
+                            <table
+                                style={{ textAlign: 'center', margin: 'auto' }}
+                            >
+                                {videos
+                                    .filter(
+                                        (video) =>
+                                            !collections[collectionId].includes(
+                                                video._id
+                                            ) && video._id.startsWith('_')
+                                    )
+                                    .map(({ _id: videoId }) => {
+                                        return (
+                                            <tr>
+                                                <td>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            addToCollection(
+                                                                collectionId,
+                                                                videoId
+                                                            );
+                                                        }}
+                                                    >
+                                                        +
+                                                    </button>
+                                                </td>
+                                                <td>
+                                                    {videoId.replace(/_/g, ' ')}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                            </table>
+                        </div>
                     </div>
                 </div>
-            </div>
-        );
+            );
+        } else {
+            return (
+                <div>
+                    {menuOptions}
+                    <p>Unimplemented. Coming Soon.</p>
+                </div>
+            );
+        }
     }
 };

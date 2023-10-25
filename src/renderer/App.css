@@ -92,6 +92,11 @@ li {
     color: white !important;
 }
 
+button.selected {
+    background-color: black !important;
+    color: white !important;
+}
+
 .subtitle,
 .resize-left,
 .resize-right {
