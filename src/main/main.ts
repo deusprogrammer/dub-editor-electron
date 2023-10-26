@@ -419,10 +419,11 @@ const exportToZip = async (
 const deleteClip = (id: string, game: string) => {
     console.log('DELETING ' + id + ' FOR GAME ' + game);
 
-    const {clip: videoFilePath, subtitle: subFilePath} = getClipPaths(id, game);
+    const {clip: videoFilePath, subtitle: subFilePath, thumbnail: thumbnailFilePath} = getClipPaths(id, game);
 
     console.log('DELETING ' + videoFilePath);
     console.log('DELETING ' + subFilePath);
+    console.log('DELETING ' + thumbnailFilePath);
 
     // Delete video files
     if (fs.existsSync(videoFilePath)) {
@@ -432,6 +433,10 @@ const deleteClip = (id: string, game: string) => {
     // Delete subtitle files
     if (fs.existsSync(subFilePath)) {
         fs.unlinkSync(subFilePath);
+    }
+
+    if (fs.existsSync(thumbnailFilePath)) {
+        fs.unlinkSync(thumbnailFilePath);
     }
 
     // Remove references to video in collections
@@ -596,9 +601,9 @@ const createWindow = async () => {
         callback(filePath);
     });
 
-    protocol.interceptFileProtocol('game', (request, callback) => {
+    protocol.interceptFileProtocol('game', async (request, callback) => {
         let url = request.url.substring(7);
-        let pattern = /^(rifftrax|whatthedub)\/(.+)\.(mp4|srt)\.*(disabled)*$/;
+        let pattern = /^(rifftrax|whatthedub)\/(.+)\.(mp4|srt|jpg)$/;
 
         if (url === "batch.tmp.mp4") {
             return callback(BATCH_VIDEO_TEMP_FILE);
@@ -623,6 +628,9 @@ const createWindow = async () => {
         } else if (ext === 'srt') {
             callback(subtitle);
         } else if (ext === 'jpg') {
+            if (!fs.existsSync(thumbnail)) {
+                await createThumbnail(clip, '00:00:01', thumbnail);
+            }
             callback(thumbnail);
         } else {
             callback(clip);

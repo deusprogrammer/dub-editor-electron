@@ -1,3 +1,8 @@
+body {
+    color: white;
+    background-color: black;
+}
+
 .App {
     text-align: center;
 }
@@ -30,7 +35,7 @@
 
 a {
     text-decoration: none;
-    color: black;
+    color: white;
 }
 
 a:hover {
@@ -39,8 +44,8 @@ a:hover {
 }
 
 .active {
-    background-color: black;
-    color: white;
+    background-color: white;
+    color: black;
 }
 
 li {
@@ -186,6 +191,65 @@ button.selected {
     }
 }
 
+.video-list-element {
+    border: 1px solid transparent;
+    border-radius: 10px;
+    width: 200px;
+}
+
+.video-list-element:hover {
+    border: 1px solid greenyellow;
+    cursor: pointer;
+}
+
+.video-list-element img:hover {
+    opacity: 0.5;
+}
+
+.removable,
+.addable,
+.openable {
+    position: relative;
+}
+
+.removable:hover::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    content: 'Remove Clip';
+    font-size: 1.8rem;
+    pointer-events: none;
+}
+
+.addable:hover::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    content: 'Add Clip';
+    font-size: 1.8rem;
+    pointer-events: none;
+}
+
+.openable:hover::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    content: 'Open';
+    font-size: 1.8rem;
+    pointer-events: none;
+}
+
+.pack-header {
+    position: sticky;
+    top: 0px;
+    background-color: black;
+    color: white;
+    z-index: 10;
+}
+
 .clip-pack-edit {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -197,8 +261,21 @@ button.selected {
     overflow-y: scroll;
 }
 
-.clip-table td:first-child {
+.clip-table {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, 200px);
+    gap: 10px;
+}
+
+.clip-table > div {
+    display: flex;
+    flex-direction: column;
+}
+
+.clip-table img {
     width: 200px;
+    height: 200px;
+    object-fit: contain;
 }
 
 .preview-image {

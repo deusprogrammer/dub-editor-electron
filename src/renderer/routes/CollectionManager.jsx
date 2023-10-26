@@ -272,38 +272,36 @@ export default () => {
                     <div className="clip-pack-edit">
                         <div>
                             <h2>Clip Pack {collectionId}</h2>
-                            <table
-                                style={{ textAlign: 'center', margin: 'auto' }}
-                            >
+                            <div className="clip-table">
                                 {collections[collectionId].map((videoId) => {
                                     return (
-                                        <tr>
-                                            <td>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        removeFromCollection(
-                                                            collectionId,
-                                                            videoId
-                                                        );
-                                                    }}
-                                                >
-                                                    -
-                                                </button>
-                                            </td>
-                                            <td>
-                                                {videoId.replace(/_/g, ' ')}
-                                            </td>
-                                        </tr>
+                                        <div>
+                                            <div
+                                                className="video-list-element"
+                                                onClick={() => {
+                                                    removeFromCollection(
+                                                        collectionId,
+                                                        videoId
+                                                    );
+                                                }}
+                                            >
+                                                <div className="removable">
+                                                    <img
+                                                        src={`game://${game}/${videoId}.jpg`}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    {videoId.replace(/_/g, ' ')}
+                                                </div>
+                                            </div>
+                                        </div>
                                     );
                                 })}
-                            </table>
+                            </div>
                         </div>
                         <div>
                             <h2>Videos Not in Clip Pack</h2>
-                            <table
-                                style={{ textAlign: 'center', margin: 'auto' }}
-                            >
+                            <div className="clip-table">
                                 {videos
                                     .filter(
                                         (video) =>
@@ -313,27 +311,27 @@ export default () => {
                                     )
                                     .map(({ _id: videoId }) => {
                                         return (
-                                            <tr>
-                                                <td>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            addToCollection(
-                                                                collectionId,
-                                                                videoId
-                                                            );
-                                                        }}
-                                                    >
-                                                        +
-                                                    </button>
-                                                </td>
-                                                <td>
+                                            <div
+                                                className="video-list-element"
+                                                onClick={() => {
+                                                    addToCollection(
+                                                        collectionId,
+                                                        videoId
+                                                    );
+                                                }}
+                                            >
+                                                <div className="addable">
+                                                    <img
+                                                        src={`game://${game}/${videoId}.jpg`}
+                                                    />
+                                                </div>
+                                                <div>
                                                     {videoId.replace(/_/g, ' ')}
-                                                </td>
-                                            </tr>
+                                                </div>
+                                            </div>
                                         );
                                     })}
-                            </table>
+                            </div>
                         </div>
                     </div>
                 </div>

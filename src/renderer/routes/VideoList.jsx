@@ -81,107 +81,99 @@ let VideoList = () => {
                 return (
                     <div>
                         <h4
+                            className="pack-header"
                             style={{
                                 position: 'sticky',
                                 top: '0px',
-                                backgroundColor: 'white',
+                                backgroundColor: 'black',
+                                color: 'white',
                             }}
                         >
                             {key}
                         </h4>
-                        <table
-                            className="clip-table"
-                            style={{ margin: 'auto' }}
-                        >
-                            <tbody>
-                                {videos
-                                    .filter((video) =>
-                                        collection.includes(video._id)
-                                    )
-                                    .map((video, index) => {
-                                        return (
-                                            <tr key={`video-${index}`}>
-                                                <td
-                                                    style={{
-                                                        textAlign: 'left',
+                        <div className="clip-table" style={{ margin: 'auto' }}>
+                            {videos
+                                .filter((video) =>
+                                    collection.includes(video._id)
+                                )
+                                .map((video, index) => {
+                                    return (
+                                        <div key={`video-${index}`}>
+                                            <div className="video-list-element">
+                                                <Link
+                                                    to={`/videos/${game}/${video._id}`}
+                                                >
+                                                    <div className="openable">
+                                                        <img
+                                                            src={`game://${game}/${video._id}.jpg`}
+                                                        />
+                                                    </div>
+                                                    <div>{video.name}</div>
+                                                </Link>
+                                            </div>
+                                            <div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        deleteFile(
+                                                            video._id,
+                                                            game,
+                                                            !video.disabled
+                                                        );
                                                     }}
                                                 >
-                                                    {video.name}
-                                                </td>
-                                                <td>
-                                                    <Link
-                                                        to={`/videos/${game}/${video._id}`}
-                                                    >
-                                                        <button type="button">
-                                                            Open Details
-                                                        </button>
-                                                    </Link>
-                                                </td>
-                                                {video._id.startsWith('_') ? (
-                                                    <td>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                deleteFile(
-                                                                    video._id,
-                                                                    game,
-                                                                    !video.disabled
-                                                                );
-                                                            }}
-                                                        >
-                                                            Delete
-                                                        </button>
-                                                    </td>
-                                                ) : null}
-                                            </tr>
-                                        );
-                                    })}
-                            </tbody>
-                        </table>
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                        </div>
                     </div>
                 );
             })}
-            <h4>Unsorted</h4>
-            <table className="clip-table" style={{ margin: 'auto' }}>
-                <tbody>
-                    {unsortedVideos.map((video, index) => {
-                        return (
-                            <tr key={`video-${index}`}>
-                                <td
-                                    style={{
-                                        textAlign: 'left',
+            <h4
+                style={{
+                    position: 'sticky',
+                    top: '0px',
+                    backgroundColor: 'black',
+                    color: 'white',
+                }}
+            >
+                Unsorted
+            </h4>
+            <div className="clip-table" style={{ margin: 'auto' }}>
+                {unsortedVideos.map((video, index) => {
+                    return (
+                        <div key={`video-${index}`}>
+                            <div className="video-list-element">
+                                <Link to={`/videos/${game}/${video._id}`}>
+                                    <div className="openable">
+                                        <img
+                                            src={`game://${game}/${video._id}.jpg`}
+                                        />
+                                    </div>
+                                    <div>{video.name}</div>
+                                </Link>
+                            </div>
+                            <div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        deleteFile(
+                                            video._id,
+                                            game,
+                                            !video.disabled
+                                        );
                                     }}
                                 >
-                                    {video.name}
-                                </td>
-                                <td>
-                                    <Link to={`/videos/${game}/${video._id}`}>
-                                        <button type="button">
-                                            Open Details
-                                        </button>
-                                    </Link>
-                                </td>
-                                {video._id.startsWith('_') ? (
-                                    <td>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                deleteFile(
-                                                    video._id,
-                                                    game,
-                                                    !video.disabled
-                                                );
-                                            }}
-                                        >
-                                            Delete
-                                        </button>
-                                    </td>
-                                ) : null}
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 };
