@@ -17,9 +17,11 @@ import { interstitialAtom } from 'renderer/atoms/interstitial.atom';
 import { handleInterstitial } from 'renderer/components/interstitial/Interstitial';
 import { useAtom } from 'jotai';
 import VideoAPI from 'renderer/api/VideoAPI';
+import { gameAtom } from 'renderer/atoms/game.atom';
 
 let ClipCutter = () => {
-    const params = useParams();
+    const [type] = useAtom(gameAtom);
+    const params = { ...useParams(), type };
     const [, setInterstitialState] = useAtom(interstitialAtom);
 
     const navigate = useNavigate();
@@ -187,7 +189,7 @@ let ClipCutter = () => {
                                         });
                                     }
                                 );
-                                navigate(`/create/${game}?batch=true`);
+                                navigate(`/create?batch=true`);
                             }}
                         />
                     </div>

@@ -21,6 +21,9 @@ import ClipCutter from './routes/editor/ClipCutter';
 import SimpleEditor from './routes/editor/SimpleEditor';
 import Interstitial from './components/interstitial/Interstitial';
 
+import riffTraxImage from './images/rifftrax.png';
+import whatTheDubImage from './images/whatthedub.png';
+
 import { useAtom } from 'jotai';
 import { interstitialAtom } from './atoms/interstitial.atom';
 
@@ -28,21 +31,24 @@ import './App.css';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { version } from '../../release/app/package.json';
+import { gameAtom } from './atoms/game.atom';
 
 const VERSION = version;
+
+const imageMap = {
+    rifftrax: riffTraxImage,
+    whatthedub: whatTheDubImage,
+};
 
 let App = (props) => {
     const navigate = useNavigate();
     const location = useLocation();
     const [interstitialState, setInterstitialState] = useAtom(interstitialAtom);
-    const [game, setGame] = useState('rifftrax');
+    const [game, setGame] = useAtom(gameAtom);
     const [config, setConfig] = useState({});
 
     const changeGame = (newGame) => {
         setGame(newGame);
-        navigate(`/${location.pathname.split('/')[1]}/${newGame}`, {
-            replace: true,
-        });
     };
 
     useEffect(() => {
@@ -78,27 +84,60 @@ let App = (props) => {
             <Interstitial isOpen={interstitialState.isOpen}>
                 {interstitialState.message}
             </Interstitial>
-            {location.pathname !== `/create/${game}` ? (
+            {!location.pathname.includes(`/create`) ? (
                 <div>
-                    <h1>Dub Editor</h1>
-                    <hr />
-                    <div>{VERSION}</div>
-                    <label>Game:</label>
-                    <select
-                        value={game}
-                        onChange={({ target: { value } }) => {
-                            changeGame(value);
+                    <header
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'row',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            gap: '10px',
                         }}
                     >
-                        <option value="rifftrax">Rifftrax</option>
-                        <option value="whatthedub">What the Dub</option>
-                    </select>
+                        <div
+                            style={{
+                                display: 'flex',
+                                flexDirection: 'row',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                gap: '10px',
+                            }}
+                        >
+                            <h1>Dub Editor</h1>
+                            <div>{VERSION}</div>
+                        </div>
+                        <div>
+                            <img
+                                src={imageMap[game]}
+                                style={{
+                                    width: '100px',
+                                    height: '100px',
+                                    objectFit: 'contain',
+                                }}
+                            />
+                            <div>
+                                <label>Game:</label>
+                                <select
+                                    value={game}
+                                    onChange={({ target: { value } }) => {
+                                        setGame(value);
+                                    }}
+                                >
+                                    <option value="rifftrax">Rifftrax</option>
+                                    <option value="whatthedub">
+                                        What the Dub
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                    </header>
                     <hr />
                     <Link
                         className={({ isActive }) =>
                             isActive ? 'active' : null
                         }
-                        to={`/videos/${game}`}
+                        to={`/videos`}
                     >
                         Clips
                     </Link>
@@ -107,7 +146,7 @@ let App = (props) => {
                         className={({ isActive }) =>
                             isActive ? 'active' : null
                         }
-                        to={`/collections/${game}`}
+                        to={`/collections`}
                     >
                         Packs
                     </Link>
@@ -116,7 +155,7 @@ let App = (props) => {
                         className={({ isActive }) =>
                             isActive ? 'active' : null
                         }
-                        to={`/config/${game}`}
+                        to={`/config`}
                     >
                         Config
                     </Link>
@@ -125,7 +164,7 @@ let App = (props) => {
                         className={({ isActive }) =>
                             isActive ? 'active' : null
                         }
-                        to={`/about/${game}`}
+                        to={`/about`}
                     >
                         About
                     </Link>
@@ -140,46 +179,30 @@ let App = (props) => {
             ) : null}
             <div style={{ minHeight: '50vh' }}>
                 <Routes>
-                    <Route exact path={`/about/:game`} element={<About />} />
-                    <Route exact path={`/config/:game`} element={<Config />} />
+                    <Route exact path={`/about`} element={<About />} />
+                    <Route exact path={`/config`} element={<Config />} />
+                    <Route exact path={`/batch`} element={<ClipCutter />} />
+                    <Route exact path={`/create`} element={<ClipEditor />} />
                     <Route
                         exact
-                        path={`/batch/:type`}
-                        element={<ClipCutter game={game} />}
-                    />
-                    <Route
-                        exact
-                        path={`/create/:type`}
-                        element={<ClipEditor game={game} />}
-                    />
-                    <Route
-                        exact
-                        path={`/create/advanced/:type`}
+                        path={`/create/advanced`}
                         element={<AdvancedEditor />}
                     />
                     <Route
                         exact
-                        path={`/create/simple/:type`}
+                        path={`/create/simple`}
                         element={<SimpleEditor />}
                     />
                     <Route
                         exact
-                        path={`/collections/:game`}
+                        path={`/collections`}
                         element={<CollectionManager />}
                     />
-                    <Route
-                        exact
-                        path={`/videos/:game`}
-                        element={<VideoList />}
-                    />
-                    <Route
-                        exact
-                        path={`/videos/:game/:id`}
-                        element={<VideoView />}
-                    />
+                    <Route exact path={`/videos`} element={<VideoList />} />
+                    <Route exact path={`/videos/:id`} element={<VideoView />} />
                     <Route
                         path="*"
-                        element={<Navigate to="/videos/rifftrax" replace />}
+                        element={<Navigate to="/videos" replace />}
                     />
                 </Routes>
             </div>

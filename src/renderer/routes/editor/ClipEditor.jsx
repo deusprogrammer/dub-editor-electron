@@ -16,9 +16,7 @@ export default ({ game }) => {
     };
 
     if (['simple', 'advanced'].includes(editor)) {
-        navigate(
-            `/create/${editor}/${game}?batch=${searchParams.get('batch')}`
-        );
+        navigate(`/create/${editor}?batch=${searchParams.get('batch')}`);
         return <div>Redirecting</div>;
     }
 

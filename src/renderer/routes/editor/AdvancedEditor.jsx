@@ -15,12 +15,14 @@ import { useAtom } from 'jotai';
 import { interstitialAtom } from 'renderer/atoms/interstitial.atom';
 import { handleInterstitial } from 'renderer/components/interstitial/Interstitial';
 import VideoAPI from 'renderer/api/VideoAPI';
+import { gameAtom } from 'renderer/atoms/game.atom';
 
 let AdvancedEditor = () => {
     const [searchParams] = useSearchParams();
     const [, setInterstitialState] = useAtom(interstitialAtom);
 
-    const params = useParams();
+    const [type] = useAtom(gameAtom);
+    const params = { ...useParams, type };
     const navigate = useNavigate();
 
     const [windowSize, setWindowSize] = useState({
@@ -150,7 +152,7 @@ let AdvancedEditor = () => {
             } else {
                 let hasBatch = await BatchAPI.hasBatch();
                 if (hasBatch > 0) {
-                    navigate(`/create/${game}?batch=true`);
+                    navigate(`/create?batch=true`);
                 } else {
                     navigate('/');
                 }
@@ -241,10 +243,12 @@ let AdvancedEditor = () => {
                         <WhatTheDubPlayer
                             videoSource={videoSource}
                             isPlaying={
-                                isPlaying && (!batchClip ||
-                                currentSliderPosition >=
-                                    batchClip.clip.startTime &&
-                                currentSliderPosition <= batchClip.clip.endTime)
+                                isPlaying &&
+                                (!batchClip ||
+                                    (currentSliderPosition >=
+                                        batchClip.clip.startTime &&
+                                        currentSliderPosition <=
+                                            batchClip.clip.endTime))
                             }
                             videoPosition={currentPosition}
                             subs={subs}

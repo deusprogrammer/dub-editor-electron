@@ -4,31 +4,71 @@ import { Link, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import BatchAPI from 'renderer/api/BatchAPI';
 import ConfigAPI from 'renderer/api/ConfigAPI';
+import { gameAtom } from 'renderer/atoms/game.atom';
 import { interstitialAtom } from 'renderer/atoms/interstitial.atom';
-import { handleInterstitial } from 'renderer/components/interstitial/Interstitial';
+import Interstitial, {
+    handleInterstitial,
+} from 'renderer/components/interstitial/Interstitial';
 
 let VideoList = () => {
-    const { game } = useParams();
-    const [videos, setVideos] = useState([]);
+    const [videoMap, setVideoMap] = useState({});
     const [batchCount, setBatchCount] = useState(0);
-    const [collections, setCollections] = useState({ _originals: [] });
+    const [collectionMap, setCollectionMap] = useState({});
     const [config, setConfig] = useState({});
+    const [game] = useAtom(gameAtom);
     const [, setInterstitialState] = useAtom(interstitialAtom);
+
+    console.log('VIDEO MAP:         ' + JSON.stringify(videoMap, null, 5));
+    console.log('COLLECTION MAP:    ' + JSON.stringify(collectionMap, null, 5));
+
+    const videos = videoMap[game];
+    const collections = collectionMap[game];
+
+    const loadVideos = async () => {
+        console.log('LOADING VIDEOS FOR ' + game);
+
+        let videoMapTemp = {};
+        videoMapTemp['rifftrax'] = await window.api.send(
+            'getVideos',
+            'rifftrax'
+        );
+        videoMapTemp['whatthedub'] = await window.api.send(
+            'getVideos',
+            'whatthedub'
+        );
+
+        let collectionMapTemp = {};
+        collectionMapTemp['rifftrax'] = await window.api.send(
+            'getCollections',
+            'rifftrax'
+        );
+        collectionMapTemp['whatthedub'] = await window.api.send(
+            'getCollections',
+            'whatthedub'
+        );
+
+        console.log(
+            'VIDEO MAP:         ' + JSON.stringify(videoMapTemp, null, 5)
+        );
+        console.log(
+            'COLLECTION MAP:    ' + JSON.stringify(collectionMapTemp, null, 5)
+        );
+
+        const hasBatch = await BatchAPI.hasBatch();
+        const config = await ConfigAPI.getConfig();
+        setVideoMap(videoMapTemp);
+        setCollectionMap(collectionMapTemp);
+        setBatchCount(hasBatch);
+        setConfig(config);
+    };
 
     useEffect(() => {
         loadVideos();
     }, [game]);
 
-    const loadVideos = async () => {
-        const videos = await window.api.send('getVideos', game);
-        const hasBatch = await BatchAPI.hasBatch();
-        const config = await ConfigAPI.getConfig();
-        const collectionMap = await window.api.send('getCollections', game);
-        setCollections(collectionMap);
-        setVideos(videos);
-        setBatchCount(hasBatch);
-        setConfig(config);
-    };
+    if (!videos || !collections) {
+        return <Interstitial isOpen={true} children={<p>Loading Media</p>} />;
+    }
 
     const deleteFile = async (id, game, isActive) => {
         await handleInterstitial(
@@ -52,30 +92,29 @@ let VideoList = () => {
     }, []);
 
     let unsortedVideos = videos.filter((video) => {
-        console.log(video._id);
         return !sortedVideos.includes(video._id) && video._id.startsWith('_');
     });
 
     return (
         <div>
-            <h2>Custom Clips ({game})</h2>
-            <h3>Actions</h3>
-            <Link to={`/create/${game}`}>
-                <button>New Clip</button>
-            </Link>
-            {config.editor === 'advanced' ? (
-                <>
-                    <Link to={`/batch/${game}`}>
-                        <button>New Batch</button>
-                    </Link>
-                    {batchCount > 0 ? (
-                        <Link to={`/create/${game}?batch=true`}>
-                            <button>Continue Batch ({batchCount})</button>
+            <div style={{ padding: '10px' }}>
+                <label>Actions:</label>
+                <Link to={`/create`}>
+                    <button>New Clip</button>
+                </Link>
+                {config.editor === 'advanced' ? (
+                    <>
+                        <Link to={`/batch`}>
+                            <button>New Batch</button>
                         </Link>
-                    ) : null}
-                </>
-            ) : null}
-            <h3>Clips</h3>
+                        {batchCount > 0 ? (
+                            <Link to={`/create?batch=true`}>
+                                <button>Continue Batch ({batchCount})</button>
+                            </Link>
+                        ) : null}
+                    </>
+                ) : null}
+            </div>
             {Object.keys(collections).map((key) => {
                 let collection = collections[key];
                 return (
@@ -101,7 +140,7 @@ let VideoList = () => {
                                         <div key={`video-${index}`}>
                                             <div className="video-list-element">
                                                 <Link
-                                                    to={`/videos/${game}/${video._id}`}
+                                                    to={`/videos/${video._id}`}
                                                 >
                                                     <div className="openable">
                                                         <img
@@ -132,22 +171,16 @@ let VideoList = () => {
                     </div>
                 );
             })}
-            <h4
-                style={{
-                    position: 'sticky',
-                    top: '0px',
-                    backgroundColor: 'black',
-                    color: 'white',
-                }}
-            >
-                Unsorted
-            </h4>
+            <h4 className="pack-header">Unsorted</h4>
+            {unsortedVideos.length <= 0 ? (
+                <p>No unsorted videos found</p>
+            ) : null}
             <div className="clip-table" style={{ margin: 'auto' }}>
                 {unsortedVideos.map((video, index) => {
                     return (
                         <div key={`video-${index}`}>
                             <div className="video-list-element">
-                                <Link to={`/videos/${game}/${video._id}`}>
+                                <Link to={`/videos/${video._id}`}>
                                     <div className="openable">
                                         <img
                                             src={`game://${game}/${video._id}.jpg`}

@@ -594,7 +594,7 @@ const createWindow = async () => {
     });
 
     protocol.interceptFileProtocol('localfile', (request, callback) => {
-        let filePath = request.url.substring(12);
+        let filePath = request.url.substring('localfile://'.length);
         
         console.log("FILE PATH: " + filePath);
 
@@ -602,7 +602,7 @@ const createWindow = async () => {
     });
 
     protocol.interceptFileProtocol('game', async (request, callback) => {
-        let url = request.url.substring(7);
+        let url = request.url.substring('game://'.length);
         let pattern = /^(rifftrax|whatthedub)\/(.+)\.(mp4|srt|jpg)$/;
 
         if (url === "batch.tmp.mp4") {
@@ -623,17 +623,21 @@ const createWindow = async () => {
 
         const {clip, subtitle, thumbnail} = getClipPaths(id, game);
 
-        if (ext === 'mp4') {
-            callback(clip);
-        } else if (ext === 'srt') {
-            callback(subtitle);
-        } else if (ext === 'jpg') {
-            if (!fs.existsSync(thumbnail)) {
-                await createThumbnail(clip, '00:00:01', thumbnail);
+        try {
+            if (ext === 'mp4') {
+                callback(clip);
+            } else if (ext === 'srt') {
+                callback(subtitle);
+            } else if (ext === 'jpg') {
+                if (!fs.existsSync(thumbnail) && fs.existsSync(clip)) {
+                    await createThumbnail(clip, '00:00:01', thumbnail);
+                }
+                callback(thumbnail);
+            } else {
+                callback(clip);
             }
-            callback(thumbnail);
-        } else {
-            callback(clip);
+        } catch (error) {
+            console.warn("Cannot fetch file " + id + "." + ext);
         }
     });
 };

@@ -36,6 +36,9 @@ const About = (props) => {
             <div>
                 <strong>Tester</strong>: Typically Thomas
             </div>
+            <div>
+                <strong>Tester</strong>: Shnazzyone
+            </div>
         </div>
     );
 };

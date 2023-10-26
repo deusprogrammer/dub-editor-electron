@@ -3,10 +3,18 @@ import WhatTheDubPlayer from '../components/WhatTheDubPlayer';
 import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
 import { convertSrtToSubtitles } from '../util/VideoTools';
+import { useAtom } from 'jotai';
+import { gameAtom } from 'renderer/atoms/game.atom';
 
 let VideoView = (props) => {
-    const params = useParams();
+    let params = useParams();
+    const [game] = useAtom(gameAtom);
     const [videoDetails, setVideoDetails] = useState(null);
+
+    params = { ...params, game };
+
+    console.log('PARAMS: ' + params);
+
     useEffect(() => {
         (async () => {
             const video = await window.api.send('getVideo', params);

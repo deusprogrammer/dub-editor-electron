@@ -6,9 +6,10 @@ import ImageSelector from 'renderer/components/ImageSelector';
 import { handleInterstitial } from 'renderer/components/interstitial/Interstitial';
 import { useAtom } from 'jotai';
 import { interstitialAtom } from 'renderer/atoms/interstitial.atom';
+import { gameAtom } from 'renderer/atoms/game.atom';
 
 export default () => {
-    const { game } = useParams();
+    const [game] = useAtom(gameAtom);
     const [newCollectionName, setNewCollectionName] = useState('');
     const [videos, setVideos] = useState([]);
     const [collections, setCollections] = useState({ _originals: [] });
