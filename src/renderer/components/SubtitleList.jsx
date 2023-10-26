@@ -95,6 +95,7 @@ export default ({
                     onClick={() => {
                         onSave(clipTitle, clipNumber, selectedCollection);
                     }}
+                    disabled={!subs.find(({ type }) => type === 'dynamic')}
                 >
                     Finalize Clip
                 </button>

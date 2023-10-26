@@ -6,6 +6,7 @@ export type DirectoryList = {
     previewImage: string,
     collectionMeta: string,
     batchCacheMeta: string,
+    logFile: string
 }
 
 export type ClipPaths = {

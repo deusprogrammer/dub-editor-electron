@@ -34,18 +34,12 @@ if (process.platform === "win32") {
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
-Object.assign(console, log.functions);
-
-console.log("HOME DIRECTORY: " + __dirname);
-console.log("FFMPEG PATH: " + ffmpegPath);
-console.log("DEFAULT PREVIEW IMAGE: " + defaultPreviewFilePath);
-
 if (!fs.existsSync(ffmpegPath)) {
-    console.error("Unable to locate FFMPEG");
+    log.error("Unable to locate FFMPEG");
 }
 
 if (!fs.existsSync(defaultPreviewFilePath)) {
-    console.error("Unable to locate default preview image");
+    log.error("Unable to locate default preview image");
 }
 
 const HOME: string =
@@ -55,11 +49,13 @@ const HOME: string =
 const CONFIG_FILE: string =             `${HOME}/.dub-editor-config.v2.json`;
 const COLLECTIONS_FILE: string =        '.dub-editor-collections.v2.json';
 const BATCH_CACHE_FILE: string =        '.dub-editor-batch-cache.v2.json';
+const LOG_FILE: string =                'dub-editor.log';
 
 const VIDEO_SUB_DIRECTORY =             'VideoClips';
 const SUBTITLE_SUB_DIRECTORY =          'Subtitles';
 const THUMBNAIL_SUB_DIRECTORY =         'ThumbNails';
 const PREVIEW_IMAGE_SUB_DIRECTORY =     'PreviewImages';
+const LOGS_SUBDIRECTORY =               'logs';
 
 export default class AppUpdater {
     constructor() {
@@ -97,17 +93,18 @@ const createMediaFolders = (game: string) => {
         return;
     }
 
-    let {clips, subtitles, thumbnails, previewImage} = getDirectoriesForGame(game);
+    let {clips, subtitles, thumbnails, previewImage, logFile} = getDirectoriesForGame(game);
     fs.mkdirSync(clips, {recursive: true});
     fs.mkdirSync(subtitles, {recursive: true});
     fs.mkdirSync(thumbnails, {recursive: true});
     fs.mkdirSync(previewImage, {recursive: true});
+    fs.mkdirSync(logFile, {recursive: true});
 }
 
 const processVideo = (inputFilePath: string, outputFilePath: string, startTime: number, duration: number) => {
     return new Promise((resolve, reject) => {
-        console.log("PROCESSING " + inputFilePath);
-        console.log("STORING TO " + outputFilePath);
+        log.info("PROCESSING " + inputFilePath);
+        log.info("STORING TO " + outputFilePath);
         // Process video
         let ts = convertMillisecondsToTimestamp(startTime);
         ffmpeg(inputFilePath)
@@ -130,7 +127,7 @@ const trimAndWriteVideo = async (inputFilePath: string, outputFilePath: string, 
     try {
         await processVideo(inputFilePath, outputFilePath, startTime, endTime - startTime);
     } catch (err) {
-        console.error("Unable to trim video: " + err);
+        log.error("Unable to trim video: " + err);
         throw new Error("Unable to trim video: " + err);
     }
 }
@@ -149,7 +146,7 @@ const createThumbnail = async (videoFilePath: string, thumbnailTime: string, thu
                 resolve(0);
             })
             .on('error', (err : any) => {
-                console.error("Failed to create thumbnail: " + err);
+                log.error("Failed to create thumbnail: " + err);
                 reject();
             })
             .run();
@@ -162,6 +159,7 @@ const getDirectoriesForGame = (game: string) : DirectoryList => {
         subtitles:      path.join(config.mediaDirectory, game, SUBTITLE_SUB_DIRECTORY),
         thumbnails:     path.join(config.mediaDirectory, game, THUMBNAIL_SUB_DIRECTORY),
         previewImage:   path.join(config.mediaDirectory, game, PREVIEW_IMAGE_SUB_DIRECTORY),
+        logFile: path.join(config.mediaDirectory, LOGS_SUBDIRECTORY),
         collectionMeta: path.join(config.mediaDirectory, COLLECTIONS_FILE),
         batchCacheMeta: path.join(config.mediaDirectory, BATCH_CACHE_FILE),
     }
@@ -173,6 +171,7 @@ const getConfigDirectories = () : DirectoryList => {
         subtitles:      '',
         thumbnails:     '',
         previewImage:   '',
+        logFile: path.join(config.mediaDirectory, LOGS_SUBDIRECTORY),
         collectionMeta: path.join(config.mediaDirectory, COLLECTIONS_FILE),
         batchCacheMeta: path.join(config.mediaDirectory, BATCH_CACHE_FILE),
     }
@@ -207,7 +206,7 @@ const addToCollection = (
 
     const {collectionMeta} = getConfigDirectories();
 
-    console.log("WRITING TO " + collectionMeta);
+    log.info("WRITING TO " + collectionMeta);
 
     // Store updated file
     fs.writeFileSync(collectionMeta, JSON.stringify(collections, null, 5));
@@ -265,7 +264,7 @@ const importZip = async (filePath: string, game: string) => {
 
     const {clips: targetVideoDirectory, subtitles: targetSubtitlesDirectory, thumbnails: targetThumbNailsDirectory, previewImage} = getDirectoriesForGame(game);
 
-    Object.values(entries).forEach((entry: any) => console.log(entry.name));
+    Object.values(entries).forEach((entry: any) => log.info(entry.name));
 
     // Try with standard directory names
     await zip.extract(sourceVideoDirectory, targetVideoDirectory);
@@ -308,7 +307,7 @@ const importZip = async (filePath: string, game: string) => {
                 `${subsDirectory}/_${videoId}.srt`
             );
         } else {
-            console.error('MISMATCHED FILES FOUND');
+            log.error('MISMATCHED FILES FOUND');
             if (fs.existsSync(`${clipsDirectory}/${videoId}.mp4`)) {
                 fs.unlinkSync(`${clipsDirectory}/${videoId}.mp4`);
             }
@@ -375,7 +374,7 @@ const exportToZip = async (
         const {clip: videoFilePath, subtitle: subFilePath, thumbnail: thumbFilePath} = getClipPaths(videoId, game);
         
         if (!fs.existsSync(videoFilePath) || !fs.existsSync(subFilePath)) {
-            console.log("SKIPPING " + videoId);
+            log.info("SKIPPING " + videoId);
             continue;
         } 
 
@@ -412,13 +411,13 @@ const exportToZip = async (
 };
 
 const deleteClip = (id: string, game: string) => {
-    console.log('DELETING ' + id + ' FOR GAME ' + game);
+    log.info('DELETING ' + id + ' FOR GAME ' + game);
 
     const {clip: videoFilePath, subtitle: subFilePath, thumbnail: thumbnailFilePath} = getClipPaths(id, game);
 
-    console.log('DELETING ' + videoFilePath);
-    console.log('DELETING ' + subFilePath);
-    console.log('DELETING ' + thumbnailFilePath);
+    log.info('DELETING ' + videoFilePath);
+    log.info('DELETING ' + subFilePath);
+    log.info('DELETING ' + thumbnailFilePath);
 
     // Delete video files
     if (fs.existsSync(videoFilePath)) {
@@ -463,7 +462,7 @@ const createMetaDataFiles = () => {
 
     // If batch storage doesn't exist, then create it
     if (!fs.existsSync(batchCacheMeta)) {
-        console.log("CREATING BATCH CACHE " + batchCacheMeta);
+        log.info("CREATING BATCH CACHE " + batchCacheMeta);
         fs.mkdirSync(HOME, { recursive: true });
         fs.writeFileSync(
             batchCacheMeta,
@@ -476,7 +475,7 @@ const createMetaDataFiles = () => {
 
     // Load default collections, and if the file for collections doesn't exist create it
     if (!fs.existsSync(collectionMeta)) {
-        console.log("CREATING COLLECTIONS");
+        log.info("CREATING COLLECTIONS");
         fs.mkdirSync(HOME, { recursive: true });
         fs.writeFileSync(
             collectionMeta,
@@ -484,9 +483,21 @@ const createMetaDataFiles = () => {
         );
         collections = defaultCollections;
     } else {
-        console.log("READING COLLECTIONS");
+        log.info("READING COLLECTIONS");
         collections = JSON.parse(fs.readFileSync(collectionMeta, {}).toString());
     }
+}
+
+const updateLogLocation = () => {
+    let {logFile} = getConfigDirectories();
+    let logFilePath = path.join(logFile, LOG_FILE);
+    log.info("LOG LOCATION: " + logFilePath);
+    log.info("HOME DIRECTORY: " + __dirname);
+    log.info("FFMPEG PATH: " + ffmpegPath);
+    log.info("DEFAULT PREVIEW IMAGE: " + defaultPreviewFilePath);
+    log.transports.file.fileName = logFilePath;
+    log.transports.file.resolvePath = () => logFilePath;
+    log.transports.file.level = 'info';
 }
 
 // Load default config
@@ -501,6 +512,7 @@ if (!fs.existsSync(CONFIG_FILE)) {
     fs.writeFileSync(CONFIG_FILE, Buffer.from(JSON.stringify(config, null, 5)));
 } else {
     config = JSON.parse(fs.readFileSync(CONFIG_FILE, {}).toString());
+    updateLogLocation();
 }
 
 createMetaDataFiles();
@@ -527,7 +539,7 @@ const installExtensions = async () => {
             extensions.map((name) => installer[name]),
             forceDownload
         )
-        .catch(console.error);
+        .catch(log.error);
 };
 
 const createWindow = async () => {
@@ -591,7 +603,7 @@ const createWindow = async () => {
     protocol.interceptFileProtocol('localfile', (request, callback) => {
         let filePath = request.url.substring('localfile://'.length);
         
-        console.log("FILE PATH: " + filePath);
+        log.info("FILE PATH: " + filePath);
 
         callback(filePath);
     });
@@ -626,7 +638,7 @@ const createWindow = async () => {
                 callback(clip);
             }
         } catch (error) {
-            console.warn("Cannot fetch file " + id + "." + ext);
+            log.warn("Cannot fetch file " + id + "." + ext);
         }
     });
 };
@@ -655,7 +667,7 @@ app.whenReady()
             if (mainWindow === null) createWindow();
         });
     })
-    .catch(console.error);
+    .catch(log.error);
 
 // Bridged functionality
 
@@ -675,12 +687,14 @@ ipcMain.handle('clipExists', (event, { title, clipNumber, game }) => {
 });
 
 ipcMain.handle('updateConfig', (event, newConfig) => {
-    console.log('CONFIG: ' + JSON.stringify(newConfig));
+    log.info('CONFIG: ' + JSON.stringify(newConfig));
     config = newConfig;
     fs.writeFileSync(CONFIG_FILE, Buffer.from(JSON.stringify(config, null, 5)));
     createMediaFolders('rifftrax');
     createMediaFolders('whatthedub');
     createMetaDataFiles();
+    
+    updateLogLocation();
     
     return;
 });
@@ -701,8 +715,8 @@ ipcMain.handle('storeBatch', async (event, { clips, video, title }) => {
 
     // Write cache file
     fs.writeFileSync(
-        BATCH_CACHE_FILE,
-        Buffer.from(JSON.stringify(batchCacheMeta, null, 5))
+        batchCacheMeta,
+        Buffer.from(JSON.stringify(batchCache, null, 5))
     );
 });
 
@@ -720,9 +734,10 @@ ipcMain.handle('nextBatchClip', (event) => {
 });
 
 ipcMain.handle('processBatchClip', async (event, {videoSource, subtitles, title, clipNumber, game}) => {
-    console.log(
+    log.info(
         `STORING ${title}-${clipNumber} for game ${game} with subtitles ${subtitles}`
     );
+    
 
     let {batchCacheMeta} = getConfigDirectories();
 
@@ -785,7 +800,7 @@ ipcMain.handle('getVideos', (event, game) => {
 });
 
 ipcMain.handle('getVideo', (event, { id, game }) => {
-    console.log('OPENING: ' + id + ' from game ' + game);
+    log.info('OPENING: ' + id + ' from game ' + game);
 
     const {clip: videoFilePath, subtitle: subFilePath} = getClipPaths(id, game);
 
@@ -805,16 +820,16 @@ ipcMain.handle('getVideo', (event, { id, game }) => {
 });
 
 ipcMain.handle('getPreviewImage', (event, { collectionId, game }) => {
-    console.log('OPENING: ' + collectionId + ' from game ' + game);
+    log.info('OPENING: ' + collectionId + ' from game ' + game);
 
     const {previewImage} = getDirectoriesForGame(game);
 
     const previewImagePath: string = path.join(previewImage, `${collectionId}.jpg`);
 
-    console.log("Opening " + previewImagePath);
+    log.info("Opening " + previewImagePath);
 
     if (!fs.existsSync(previewImagePath)) {
-        console.log("File doesn't exist?");
+        log.info("File doesn't exist?");
         return {
             name: 'Unknown',
             imageUrl: null
@@ -834,7 +849,7 @@ ipcMain.handle('getPreviewImage', (event, { collectionId, game }) => {
 ipcMain.handle(
     'storeVideo',
     (event, { videoSource, subtitles, title, clipNumber, game }) => {
-        console.log(
+        log.info(
             `STORING ${title}-${clipNumber} for game ${game} with subtitles ${subtitles}`
         );
 
@@ -842,7 +857,7 @@ ipcMain.handle(
 
         const {clip: videoFilePath, subtitle: subFilePath, thumbnail: thumbNailPath} = getClipPaths(id, game);
 
-        console.log('SAVING TO ' + videoFilePath + '\n' + subFilePath);
+        log.info('SAVING TO ' + videoFilePath + '\n' + subFilePath);
 
         fs.copyFileSync(videoSource.replace("localfile://", ""), videoFilePath);
         fs.writeFileSync(subFilePath, subtitles);
@@ -858,7 +873,7 @@ ipcMain.handle(
 ipcMain.handle(
     'storePreviewImage',
     (event, { collectionId, imageBase64, game }) => {
-        console.log(
+        log.info(
             `STORING ${collectionId} for game ${game}`
         );
 
@@ -867,7 +882,7 @@ ipcMain.handle(
         // Store the videos disabled by default to allow testing via collection
         const previewImagePath = path.join(previewImage, `${collectionId}.jpg`);
 
-        console.log('SAVING TO ' + previewImagePath);
+        log.info('SAVING TO ' + previewImagePath);
 
         fs.writeFileSync(previewImagePath, imageBase64.split(';base64,').pop(), {encoding: 'base64'});
     }
@@ -878,7 +893,7 @@ ipcMain.handle('deleteVideo', (event, { id, game }) => {
 });
 
 ipcMain.handle('createCollection', (event, { collectionId, game }) => {
-    console.log(`CREATING COLLECTION ${collectionId} for game ${game}`);
+    log.info(`CREATING COLLECTION ${collectionId} for game ${game}`);
 
     // If the collection isn't present, create a key and an empty array for it.
     if (!(collectionId in collections[game])) {
@@ -896,7 +911,7 @@ ipcMain.handle('createCollection', (event, { collectionId, game }) => {
 ipcMain.handle(
     'deleteCollection',
     (event, { collectionId, game, deleteFiles }) => {
-        console.log(`DELETING COLLECTION ${collectionId} for game ${game}`);
+        log.info(`DELETING COLLECTION ${collectionId} for game ${game}`);
 
         // If the collection isn't present, create a key and an empty array for it.
         if (
@@ -908,7 +923,7 @@ ipcMain.handle(
 
         // If delete files, delete files with collection
         if (deleteFiles) {
-            console.log('DELETING FILES FROM COLLECTION');
+            log.info('DELETING FILES FROM COLLECTION');
             collections[game][collectionId].forEach((id: string) => {
                 deleteClip(id, game);
             });
@@ -919,7 +934,7 @@ ipcMain.handle(
         if (fs.existsSync(previewImagePath)) {
             fs.unlinkSync(previewImagePath);
         }
-        console.log("DELETING PREVIEW IMAGE: " + previewImagePath);
+        log.info("DELETING PREVIEW IMAGE: " + previewImagePath);
 
         delete collections[game][collectionId];
         const {collectionMeta} = getConfigDirectories();
@@ -935,7 +950,7 @@ ipcMain.handle(
 );
 
 ipcMain.handle('addToCollection', (event, { collectionId, videoId, game }) => {
-    console.log(
+    log.info(
         `ADDING ${videoId} for game ${game} to collection ${collectionId}`
     );
 
@@ -959,13 +974,13 @@ ipcMain.handle('addToCollection', (event, { collectionId, videoId, game }) => {
 ipcMain.handle(
     'removeFromCollection',
     (event, { collectionId, videoId, game }) => {
-        console.log(
+        log.info(
             `REMOVING ${videoId} for game ${game} from collection ${collectionId}`
         );
 
         // If the collection isn't present, return immediately.
         if (!(collectionId in collections[game])) {
-            console.log("COLLECTION NOT PRESENT");
+            log.info("COLLECTION NOT PRESENT");
             return;
         }
 
@@ -988,7 +1003,7 @@ ipcMain.handle(
 ipcMain.handle(
     'renameCollection',
     (event, { oldCollectionId, newCollectionId, game }) => {
-        console.log(
+        log.info(
             `RENAME ${oldCollectionId} for game ${game} to ${newCollectionId}`
         );
 
@@ -1068,7 +1083,7 @@ ipcMain.handle('setActive', async (event) => {
 });
 
 ipcMain.handle('importZip', async (event, game) => {
-    console.log('IMPORTING ZIP');
+    log.info('IMPORTING ZIP');
     const response = await dialog.showOpenDialog({
         properties: ['openFile'],
         filters: [{ name: 'Zip File', extensions: ['zip'] }],

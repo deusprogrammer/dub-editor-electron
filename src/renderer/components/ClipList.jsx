@@ -48,6 +48,7 @@ export default ({
                     onClick={() => {
                         onProcess(clipTitle, clips);
                     }}
+                    disabled={clips.length < 1}
                 >
                     Process Batch
                 </button>
