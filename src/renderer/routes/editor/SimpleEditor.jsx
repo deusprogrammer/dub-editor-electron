@@ -9,9 +9,11 @@ import VideoAPI from 'renderer/api/VideoAPI';
 import { useAtom } from 'jotai';
 import { interstitialAtom } from 'renderer/atoms/interstitial.atom';
 import { handleInterstitial } from 'renderer/components/interstitial/Interstitial';
+import { gameAtom } from 'renderer/atoms/game.atom';
 
 let SimpleEditor = () => {
-    const params = useParams();
+    const [type] = useAtom(gameAtom);
+    const params = { ...useParams(), type };
     const navigate = useNavigate();
 
     const [, setInterstitialState] = useAtom(interstitialAtom);
@@ -86,6 +88,9 @@ let SimpleEditor = () => {
 
     let onFileOpen = async () => {
         let filePath = await VideoAPI.getVideoFile();
+        if (!filePath) {
+            return;
+        }
         setVideoSource(`localfile://${filePath}`);
     };
 

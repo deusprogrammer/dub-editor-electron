@@ -56,9 +56,6 @@ const CONFIG_FILE: string =             `${HOME}/.dub-editor-config.v2.json`;
 const COLLECTIONS_FILE: string =        '.dub-editor-collections.v2.json';
 const BATCH_CACHE_FILE: string =        '.dub-editor-batch-cache.v2.json';
 
-const BATCH_VIDEO_TEMP_FILE: string =   '.dub-editor-data.v2/dub-editor-batch-tmp.mp4';
-const CLIP_VIDEO_TEMP_FILE: string =    '.dub-editor-data.v2/dub-editor-clip-tmp.mp4';
-
 const VIDEO_SUB_DIRECTORY =             'VideoClips';
 const SUBTITLE_SUB_DIRECTORY =          'Subtitles';
 const THUMBNAIL_SUB_DIRECTORY =         'ThumbNails';
@@ -167,7 +164,6 @@ const getDirectoriesForGame = (game: string) : DirectoryList => {
         previewImage:   path.join(config.mediaDirectory, game, PREVIEW_IMAGE_SUB_DIRECTORY),
         collectionMeta: path.join(config.mediaDirectory, COLLECTIONS_FILE),
         batchCacheMeta: path.join(config.mediaDirectory, BATCH_CACHE_FILE),
-        batchVideoMeta: path.join(config.mediaDirectory, BATCH_VIDEO_TEMP_FILE),
     }
 }
 
@@ -179,7 +175,6 @@ const getConfigDirectories = () : DirectoryList => {
         previewImage:   '',
         collectionMeta: path.join(config.mediaDirectory, COLLECTIONS_FILE),
         batchCacheMeta: path.join(config.mediaDirectory, BATCH_CACHE_FILE),
-        batchVideoMeta: path.join(config.mediaDirectory, BATCH_VIDEO_TEMP_FILE),
     }
 }
 
@@ -468,7 +463,7 @@ const createMetaDataFiles = () => {
 
     // If batch storage doesn't exist, then create it
     if (!fs.existsSync(batchCacheMeta)) {
-        console.log("CREATING BATCH CACHE");
+        console.log("CREATING BATCH CACHE " + batchCacheMeta);
         fs.mkdirSync(HOME, { recursive: true });
         fs.writeFileSync(
             batchCacheMeta,
@@ -605,12 +600,6 @@ const createWindow = async () => {
         let url = request.url.substring('game://'.length);
         let pattern = /^(rifftrax|whatthedub)\/(.+)\.(mp4|srt|jpg)$/;
 
-        if (url === "batch.tmp.mp4") {
-            return callback(BATCH_VIDEO_TEMP_FILE);
-        } else if (url === "clip.tmp.mp4") {
-            return callback(CLIP_VIDEO_TEMP_FILE);
-        }
-
         let match : any = url.match(pattern);
 
         if (!match) {
@@ -708,10 +697,12 @@ ipcMain.handle('storeBatch', async (event, { clips, video, title }) => {
         clips,
     };
 
+    let {batchCacheMeta} = getConfigDirectories();
+
     // Write cache file
     fs.writeFileSync(
         BATCH_CACHE_FILE,
-        Buffer.from(JSON.stringify(batchCache, null, 5))
+        Buffer.from(JSON.stringify(batchCacheMeta, null, 5))
     );
 });
 
@@ -733,6 +724,8 @@ ipcMain.handle('processBatchClip', async (event, {videoSource, subtitles, title,
         `STORING ${title}-${clipNumber} for game ${game} with subtitles ${subtitles}`
     );
 
+    let {batchCacheMeta} = getConfigDirectories();
+
     let clip : any = batchCache.clips[0];
 
     if (clip) {
@@ -749,7 +742,7 @@ ipcMain.handle('processBatchClip', async (event, {videoSource, subtitles, title,
         batchCache.clips.shift();
         batchCache.clipNumber++;
         fs.writeFileSync(
-            BATCH_CACHE_FILE,
+            batchCacheMeta,
             Buffer.from(JSON.stringify(batchCache, null, 5))
         );
 
@@ -877,31 +870,6 @@ ipcMain.handle(
         console.log('SAVING TO ' + previewImagePath);
 
         fs.writeFileSync(previewImagePath, imageBase64.split(';base64,').pop(), {encoding: 'base64'});
-    }
-);
-
-ipcMain.handle(
-    'storeTempVideo',
-    (event, {videoArrayBuffer, type}) => {
-        console.log(
-            `STORING TEMP CLIP VIDEO`
-        );
-
-        if (type === "clip") {
-            fs.writeFileSync(
-                CLIP_VIDEO_TEMP_FILE,
-                Buffer.from(videoArrayBuffer)
-            );
-            return `app://clip.tmp.mp4`;
-        } else if (type === "batch") {
-            fs.writeFileSync(
-                BATCH_VIDEO_TEMP_FILE,
-                Buffer.from(videoArrayBuffer)
-            );
-            return `app://batch.tmp.mp4`;
-        }
-
-        return null;        
     }
 );
 

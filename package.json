@@ -156,7 +156,7 @@
         "webpack-merge": "^5.8.0"
     },
     "build": {
-        "productName": "Dub Editor",
+        "productName": "Dub Editor SA",
         "appId": "com.trinary.dub-editor",
         "asar": true,
         "asarUnpack": [

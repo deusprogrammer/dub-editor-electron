@@ -57,6 +57,9 @@ let ClipCutter = () => {
 
     let onFileOpen = async () => {
         let filePath = await VideoAPI.getVideoFile();
+        if (!filePath) {
+            return;
+        }
         setVideoSource(`localfile://${filePath}`);
     };
 
