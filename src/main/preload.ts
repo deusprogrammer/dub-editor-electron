@@ -34,6 +34,7 @@ contextBridge.exposeInMainWorld('api', {
             'openDialog',
             'openVideoFile',
             'importZip',
+            'getSubtitle'
         ];
         if (validChannels.includes(channel)) {
             return await ipcRenderer.invoke(channel, args);

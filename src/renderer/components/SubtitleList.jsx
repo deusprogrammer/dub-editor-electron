@@ -21,8 +21,10 @@ export default ({
     clipNumberOverride,
     titleOverride,
     currentSub,
+    currentRow,
     currentSliderPosition,
     game,
+    videoLength,
     onSubsChange,
     onSelectSub,
     onRemoveSub,
@@ -32,6 +34,9 @@ export default ({
     const [clipNumber, setClipNumber] = useState(clipNumberOverride || 1);
     const [collections, setCollections] = useState([]);
     const [selectedCollection, setSelectedCollection] = useState('_none');
+
+    let videoLengthMs = videoLength * 1000;
+    let defaultClipSize = videoLengthMs * 0.1;
 
     useEffect(() => {
         getCollections();
@@ -105,36 +110,69 @@ export default ({
                 </Link>
             </div>
             <h3>Subtitles</h3>
-            <div className="subtitle-list">
-                {subs.map((sub) => {
-                    return (
-                        <div
-                            className={
-                                sub.index === currentSub ? 'selected' : null
-                            }
-                        >
-                            [{sub.index}] :{' '}
-                            {convertMillisecondsToTimestamp(sub.startTime)} -{' '}
-                            {convertMillisecondsToTimestamp(sub.endTime)}
-                            <button
+            <table className="subtitle-list">
+                <thead>
+                    <tr>
+                        <th>Index</th>
+                        <th>In</th>
+                        <th>Out</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {subs.map((sub) => {
+                        return (
+                            <tr
+                                className={
+                                    sub.index === currentSub ? 'selected' : null
+                                }
+                                style={{ cursor: 'pointer' }}
                                 onClick={() => {
                                     onSelectSub(sub.index);
                                 }}
                             >
-                                Select
-                            </button>
-                            <button
-                                onClick={() => {
-                                    onSubsChange('remove', sub);
-                                    onSelectSub(null);
-                                }}
-                            >
-                                Remove
-                            </button>
-                        </div>
-                    );
-                })}
-            </div>
+                                <td>[{sub.index}]</td>
+                                <td>
+                                    {convertMillisecondsToTimestamp(
+                                        sub.startTime
+                                    )}
+                                </td>
+                                <td>
+                                    {convertMillisecondsToTimestamp(
+                                        sub.endTime
+                                    )}
+                                </td>
+                                <td>
+                                    <button
+                                        onClick={(e) => {
+                                            onSubsChange('remove', sub);
+                                            onSelectSub(null);
+                                            e.stopPropagation();
+                                        }}
+                                    >
+                                        Remove
+                                    </button>
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+            <button
+                onClick={() => {
+                    onSubsChange('add', {
+                        rowIndex: currentRow,
+                        startTime: parseInt(currentSliderPosition),
+                        endTime:
+                            parseInt(currentSliderPosition) + defaultClipSize,
+                        text: '',
+                        type: 'subtitle',
+                        voice: 'male',
+                    });
+                }}
+            >
+                Add Subtitle
+            </button>
             {currentSubObject ? (
                 <>
                     <h3>Subtitle Editor</h3>
@@ -200,6 +238,7 @@ export default ({
                                 </td>
                                 <td>
                                     <select
+                                        id="subtitle-type"
                                         value={currentSubObject.type}
                                         onChange={({
                                             target: { value: type },
@@ -233,6 +272,7 @@ export default ({
                                     </td>
                                     <td>
                                         <select
+                                            id="subtitle-voice"
                                             value={currentSubObject.voice}
                                             onChange={({
                                                 target: { value: voice },
@@ -262,6 +302,7 @@ export default ({
                                     </td>
                                     <td>
                                         <textarea
+                                            id="subtitle-text"
                                             value={currentSubObject.text}
                                             onChange={({
                                                 target: { value: text },

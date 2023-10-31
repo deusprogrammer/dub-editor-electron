@@ -20,12 +20,17 @@ export default ({
     clips,
     currentClip,
     currentSliderPosition,
+    videoLength,
     onClipsChange,
     onSelectClip,
     onProcess,
 }) => {
     const [clipTitle, setClipTitle] = useState('');
     let currentClipObject = clips[currentClip];
+
+    let videoLengthMs = videoLength * 1000;
+    let defaultClipSize = videoLengthMs * 0.1;
+
     return (
         <div className="subtitle-window">
             <h3>Clip Details</h3>
@@ -58,36 +63,68 @@ export default ({
                 </Link>
             </div>
             <h3>Clips</h3>
-            <div className="subtitle-list">
-                {clips.map((clip) => {
-                    return (
-                        <div
-                            className={
-                                clip.index === currentClip ? 'selected' : null
-                            }
-                        >
-                            [{clip.index}] :{' '}
-                            {convertMillisecondsToTimestamp(clip.startTime)} -{' '}
-                            {convertMillisecondsToTimestamp(clip.endTime)}
-                            <button
+            <table className="subtitle-list">
+                <thead>
+                    <tr>
+                        <th>Index</th>
+                        <th>In</th>
+                        <th>Out</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {clips.map((clip) => {
+                        return (
+                            <tr
+                                className={
+                                    clip.index === currentClip
+                                        ? 'selected'
+                                        : null
+                                }
+                                style={{ cursor: 'pointer' }}
                                 onClick={() => {
                                     onSelectClip(clip.index);
                                 }}
                             >
-                                Select
-                            </button>
-                            <button
-                                onClick={() => {
-                                    onClipsChange('remove', clip);
-                                    onSelectClip(null);
-                                }}
-                            >
-                                Remove
-                            </button>
-                        </div>
-                    );
-                })}
-            </div>
+                                <td>[{clip.index}]</td>
+                                <td>
+                                    {convertMillisecondsToTimestamp(
+                                        clip.startTime
+                                    )}
+                                </td>
+                                <td>
+                                    {convertMillisecondsToTimestamp(
+                                        clip.endTime
+                                    )}
+                                </td>
+                                <td>
+                                    <button
+                                        onClick={(e) => {
+                                            onClipsChange('remove', clip);
+                                            onSelectClip(null);
+                                            e.stopPropagation();
+                                        }}
+                                    >
+                                        Remove
+                                    </button>
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+            <button
+                onClick={() => {
+                    onClipsChange('add', {
+                        rowIndex: 0,
+                        startTime: parseInt(currentSliderPosition),
+                        endTime:
+                            parseInt(currentSliderPosition) + defaultClipSize,
+                    });
+                }}
+            >
+                Add Subtitle
+            </button>
             {currentClipObject ? (
                 <>
                     <h3>Clip Editor</h3>

@@ -49,6 +49,11 @@ let VideoView = (props) => {
                     <pre>{atob(videoDetails.srtBase64)}</pre>
                 </div>
             ) : null}
+            <div>
+                <Link to={`/edit/${params.id}`}>
+                    <button>Edit Clip</button>
+                </Link>
+            </div>
         </div>
     );
 };

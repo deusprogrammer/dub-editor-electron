@@ -14,6 +14,7 @@ import { gameAtom } from 'renderer/atoms/game.atom';
 let SimpleEditor = () => {
     const [type] = useAtom(gameAtom);
     const params = { ...useParams(), type };
+    const { id } = useParams();
     const navigate = useNavigate();
 
     const [, setInterstitialState] = useAtom(interstitialAtom);
@@ -173,8 +174,21 @@ let SimpleEditor = () => {
     };
 
     useEffect(() => {
+        if (id) {
+            getVideo(id);
+        }
+
         getCollections();
     }, []);
+
+    const getVideo = async (id) => {
+        let videoDetails = await window.api.send('getVideo', {
+            id,
+            game: params.type,
+        });
+        setVideoSource(`game://${params.type}/${id}.mp4`);
+        setSubs(convertSrtToSubtitles(videoDetails.srtBase64));
+    };
 
     const getCollections = async () => {
         let collections = await CollectionAPI.getCollections(params.type);

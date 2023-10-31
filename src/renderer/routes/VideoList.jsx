@@ -15,18 +15,15 @@ let VideoList = () => {
     const [batchCount, setBatchCount] = useState(0);
     const [collectionMap, setCollectionMap] = useState({});
     const [config, setConfig] = useState({});
+    const [selectedCollection, setSelectedCollection] = useState('');
+    const [searchValue, setSearchValue] = useState(null);
     const [game] = useAtom(gameAtom);
     const [, setInterstitialState] = useAtom(interstitialAtom);
-
-    console.log('VIDEO MAP:         ' + JSON.stringify(videoMap, null, 5));
-    console.log('COLLECTION MAP:    ' + JSON.stringify(collectionMap, null, 5));
 
     const videos = videoMap[game];
     const collections = collectionMap[game];
 
     const loadVideos = async () => {
-        console.log('LOADING VIDEOS FOR ' + game);
-
         let videoMapTemp = {};
         videoMapTemp['rifftrax'] = await window.api.send(
             'getVideos',
@@ -45,13 +42,6 @@ let VideoList = () => {
         collectionMapTemp['whatthedub'] = await window.api.send(
             'getCollections',
             'whatthedub'
-        );
-
-        console.log(
-            'VIDEO MAP:         ' + JSON.stringify(videoMapTemp, null, 5)
-        );
-        console.log(
-            'COLLECTION MAP:    ' + JSON.stringify(collectionMapTemp, null, 5)
         );
 
         const hasBatch = await BatchAPI.hasBatch();
@@ -115,97 +105,75 @@ let VideoList = () => {
                     </>
                 ) : null}
             </div>
-            {Object.keys(collections).map((key) => {
-                let collection = collections[key];
-                return (
-                    <div>
-                        <h4
-                            className="pack-header"
-                            style={{
-                                position: 'sticky',
-                                top: '0px',
-                                backgroundColor: 'black',
-                                color: 'white',
-                            }}
-                        >
-                            {key}
-                        </h4>
-                        <div className="clip-table" style={{ margin: 'auto' }}>
-                            {videos
-                                .filter((video) =>
-                                    collection.includes(video._id)
-                                )
-                                .map((video, index) => {
-                                    return (
-                                        <div key={`video-${index}`}>
-                                            <div className="video-list-element">
-                                                <Link
-                                                    to={`/videos/${video._id}`}
-                                                >
-                                                    <div className="openable">
-                                                        <img
-                                                            src={`game://${game}/${video._id}.jpg`}
-                                                        />
-                                                    </div>
-                                                    <div>{video.name}</div>
-                                                </Link>
-                                            </div>
-                                            <div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        deleteFile(
-                                                            video._id,
-                                                            game,
-                                                            !video.disabled
-                                                        );
-                                                    }}
-                                                >
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                        </div>
-                    </div>
-                );
-            })}
-            <h4 className="pack-header">Unsorted</h4>
-            {unsortedVideos.length <= 0 ? (
-                <p>No unsorted videos found</p>
-            ) : null}
+            <div>
+                <label>Search:</label>
+                <input
+                    type="text"
+                    onChange={({ target: { value } }) => {
+                        setSearchValue(value);
+                    }}
+                />
+                <label>Clip Pack:</label>
+                <select
+                    onChange={({ target: { value } }) => {
+                        setSelectedCollection(value);
+                    }}
+                >
+                    <option value="">All</option>
+                    {Object.keys(collections).map((name) => {
+                        return <option value={name}>{name}</option>;
+                    })}
+                </select>
+            </div>
             <div className="clip-table" style={{ margin: 'auto' }}>
-                {unsortedVideos.map((video, index) => {
-                    return (
-                        <div key={`video-${index}`}>
-                            <div className="video-list-element">
-                                <Link to={`/videos/${video._id}`}>
-                                    <div className="openable">
-                                        <img
-                                            src={`game://${game}/${video._id}.jpg`}
-                                        />
-                                    </div>
-                                    <div>{video.name}</div>
-                                </Link>
+                {videos
+                    .filter(({ _id, name }) => {
+                        let f = true;
+                        if (collections[selectedCollection]) {
+                            f =
+                                f &&
+                                collections[selectedCollection].includes(_id);
+                        }
+                        if (searchValue) {
+                            f =
+                                f &&
+                                name
+                                    .toLowerCase()
+                                    .includes(searchValue.toLowerCase());
+                        }
+
+                        return f;
+                    })
+                    .map((video, index) => {
+                        return (
+                            <div key={`video-${index}`}>
+                                <div className="video-list-element">
+                                    <Link to={`/videos/${video._id}`}>
+                                        <div className="openable">
+                                            <img
+                                                src={`game://${game}/${video._id}.jpg`}
+                                            />
+                                        </div>
+                                        <div>{video.name}</div>
+                                    </Link>
+                                </div>
+                                <div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            deleteFile(
+                                                video._id,
+                                                game,
+                                                !video.disabled
+                                            );
+                                        }}
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
                             </div>
-                            <div>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        deleteFile(
-                                            video._id,
-                                            game,
-                                            !video.disabled
-                                        );
-                                    }}
-                                >
-                                    Delete
-                                </button>
-                            </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
             </div>
         </div>
     );

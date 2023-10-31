@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -44,6 +44,9 @@ let ClipCutter = () => {
 
     const [videoLength, setVideoLength] = useState(0);
 
+    let videoLengthMs = videoLength * 1000;
+    let defaultClipSize = videoLengthMs * 0.1;
+
     let game = '';
     if (params.type === 'rifftrax') {
         game = 'RiffTrax';
@@ -54,6 +57,163 @@ let ClipCutter = () => {
     window.onresize = () => {
         setWindowSize({ width: window.innerWidth, height: window.innerHeight });
     };
+
+    const isActiveElementInput = () => {
+        let activeElement = document.activeElement;
+        let inputs = ['input', 'select', 'button', 'textarea'];
+
+        return (
+            activeElement &&
+            activeElement.type !== 'range' &&
+            inputs.indexOf(activeElement.tagName.toLowerCase()) !== -1
+        );
+    };
+
+    const stateRef = useRef();
+    stateRef.current = {
+        currentClip,
+        currentSliderPosition,
+        clips,
+        isPlaying,
+        defaultClipSize,
+        videoLength,
+    };
+    const keyboardHandler = useCallback((event) => {
+        console.log('EVENT: ' + event.key);
+        if (isActiveElementInput()) {
+            if (event.key === 'Enter') {
+                document.activeElement.blur();
+            }
+
+            return;
+        }
+
+        switch (event.key) {
+            case 'ArrowUp':
+                if (stateRef.current.currentClip === null) {
+                    return;
+                }
+                setCurrentClip((currentClip) =>
+                    Math.min(stateRef.current.clips.length - 1, currentClip + 1)
+                );
+                break;
+            case 'ArrowDown':
+                if (stateRef.current.currentClip === null) {
+                    return;
+                }
+                setCurrentClip((currentClip) => Math.max(0, currentClip - 1));
+                break;
+            case 'ArrowLeft':
+                setCurrentSliderPosition((currentSliderPosition) =>
+                    Math.max(0, currentSliderPosition - 1000)
+                );
+                setCurrentPosition((currentPosition) =>
+                    Math.max(0, currentPosition - 1)
+                );
+                break;
+            case 'ArrowRight':
+                setCurrentSliderPosition((currentSliderPosition) =>
+                    Math.min(
+                        stateRef.current.videoLength * 1000,
+                        currentSliderPosition + 1000
+                    )
+                );
+                setCurrentPosition((currentPosition) =>
+                    Math.min(stateRef.current.videoLength, currentPosition + 1)
+                );
+                break;
+            case ',':
+                setCurrentSliderPosition((currentSliderPosition) =>
+                    Math.max(0, currentSliderPosition - 1000 / 60)
+                );
+                setCurrentPosition((currentPosition) =>
+                    Math.max(0, currentPosition - 1 / 60)
+                );
+                break;
+            case '.':
+                setCurrentSliderPosition((currentSliderPosition) =>
+                    Math.min(
+                        stateRef.current.videoLength * 1000,
+                        currentSliderPosition + 1000 / 60
+                    )
+                );
+                setCurrentPosition((currentPosition) =>
+                    Math.min(
+                        stateRef.current.videoLength,
+                        currentPosition + 1 / 60
+                    )
+                );
+                break;
+            case 'i': {
+                let currentClipObject =
+                    stateRef.current.clips[stateRef.current.currentClip];
+                clipChangeHandler(
+                    'edit',
+                    {
+                        ...currentClipObject,
+                        startTime: stateRef.current.currentSliderPosition,
+                    },
+                    stateRef.current.currentClip
+                );
+                break;
+            }
+            case 'o': {
+                let currentClipObject =
+                    stateRef.current.clips[stateRef.current.currentClip];
+                clipChangeHandler(
+                    'edit',
+                    {
+                        ...currentClipObject,
+                        endTime: stateRef.current.currentSliderPosition,
+                    },
+                    stateRef.current.currentClip
+                );
+                break;
+            }
+            case 'n':
+                clipChangeHandler('add', {
+                    rowIndex: 0,
+                    startTime: parseInt(stateRef.current.currentSliderPosition),
+                    endTime:
+                        parseInt(stateRef.current.currentSliderPosition) +
+                        stateRef.current.defaultClipSize,
+                    text: '',
+                    type: 'subtitle',
+                    voice: 'male',
+                });
+                break;
+            case ' ':
+                setIsPlaying((isPlaying) => !isPlaying);
+                break;
+        }
+        event.stopPropagation();
+    });
+
+    useEffect(() => {
+        document.addEventListener('keydown', keyboardHandler);
+
+        return () => {
+            document.removeEventListener('keydown', keyboardHandler);
+        };
+    }, []);
+
+    const getCurrentIndex = () => {
+        let index = clips.findIndex((subtitle) => {
+            return (
+                currentSliderPosition > subtitle.startTime &&
+                currentSliderPosition < subtitle.endTime
+            );
+        });
+
+        return index;
+    };
+
+    useEffect(() => {
+        let index = getCurrentIndex();
+        if (index >= 0) {
+            setCurrentClip(index);
+        }
+    }, [currentSliderPosition]);
 
     let onFileOpen = async () => {
         let filePath = await VideoAPI.getVideoFile();
@@ -90,7 +250,7 @@ let ClipCutter = () => {
     const clipChangeHandler = (mode, clip) => {
         if (mode === 'add') {
             let newClipIndex = 0;
-            let clipList = [...clips, clip]
+            let clipList = [...stateRef.current.clips, clip]
                 .sort((a, b) => a.startTime - b.startTime)
                 .map((modifiedClip, index) => {
                     if (!modifiedClip.index) {
@@ -109,11 +269,11 @@ let ClipCutter = () => {
                 clip.startTime = 0;
                 clip.endTime = clip.startTime + clipLength;
             }
-            if (clip.endTime > videoLength * 1000) {
-                clip.endTime = videoLength * 1000;
+            if (clip.endTime > stateRef.current.videoLength * 1000) {
+                clip.endTime = stateRef.current.videoLength * 1000;
                 clip.startTime = clip.endTime - clipLength;
             }
-            let clipList = [...clips];
+            let clipList = [...stateRef.current.clips];
             clipList[clip.index] = clip;
             clipList = clipList.map((modifiedClip, index) => {
                 return {
@@ -123,7 +283,7 @@ let ClipCutter = () => {
             });
             setClips(clipList);
         } else if (mode === 'remove') {
-            let clipList = [...clips];
+            let clipList = [...stateRef.current.clips];
             clipList.splice(clip.index, 1);
             clipList = clipList.map((modifiedClip, index) => {
                 return {
@@ -133,7 +293,7 @@ let ClipCutter = () => {
             });
             setClips(clipList);
         } else if (mode === 'sort') {
-            let clipList = [...clips];
+            let clipList = [...stateRef.current.clips];
             clipList = clipList
                 .sort((a, b) => a.startTime - b.startTime)
                 .map((modifiedClip, index) => {
@@ -176,6 +336,7 @@ let ClipCutter = () => {
                             clips={clips}
                             currentClip={currentClip}
                             currentSliderPosition={currentSliderPosition}
+                            videoLength={videoLength}
                             onClipsChange={clipChangeHandler}
                             onSelectClip={setCurrentClip}
                             onProcess={async (title, clips) => {
@@ -199,6 +360,7 @@ let ClipCutter = () => {
                     <TimeLine
                         timelineWidth={windowSize.width * 0.9}
                         rowCount={1}
+                        currentRow={0}
                         isPlaying={isPlaying}
                         currentSub={currentClip}
                         currentPosition={currentPosition}

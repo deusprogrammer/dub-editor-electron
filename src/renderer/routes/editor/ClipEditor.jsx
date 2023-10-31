@@ -1,8 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import {
+    Link,
+    useNavigate,
+    useParams,
+    useSearchParams,
+} from 'react-router-dom';
 
 export default ({ game }) => {
     const [searchParams] = useSearchParams();
+    const { id } = useParams();
     const [editor, setEditor] = useState(null);
     const navigate = useNavigate();
 
@@ -14,6 +20,11 @@ export default ({ game }) => {
         const config = await window.api.send('getConfig');
         setEditor(config.editor);
     };
+
+    if (id && ['simple', 'advanced'].includes(editor)) {
+        navigate(`/edit/${id}/${editor}`);
+        return <div>Redirecting</div>;
+    }
 
     if (['simple', 'advanced'].includes(editor)) {
         navigate(`/create/${editor}?batch=${searchParams.get('batch')}`);

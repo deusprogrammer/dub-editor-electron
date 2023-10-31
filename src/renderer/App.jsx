@@ -27,11 +27,11 @@ import whatTheDubImage from './images/whatthedub.png';
 import { useAtom } from 'jotai';
 import { interstitialAtom } from './atoms/interstitial.atom';
 
-import './App.css';
-import 'react-toastify/dist/ReactToastify.css';
-
 import { version } from '../../release/app/package.json';
 import { gameAtom } from './atoms/game.atom';
+
+import './App.css';
+import 'react-toastify/dist/ReactToastify.css';
 
 const VERSION = version;
 
@@ -184,6 +184,17 @@ let App = (props) => {
                     <Route exact path={`/config`} element={<Config />} />
                     <Route exact path={`/batch`} element={<ClipCutter />} />
                     <Route exact path={`/create`} element={<ClipEditor />} />
+                    <Route exact path={`/edit/:id`} element={<ClipEditor />} />
+                    <Route
+                        exact
+                        path={`/edit/:id/advanced`}
+                        element={<AdvancedEditor />}
+                    />
+                    <Route
+                        exact
+                        path={`/edit/:id/simple`}
+                        element={<SimpleEditor />}
+                    />
                     <Route
                         exact
                         path={`/create/advanced`}

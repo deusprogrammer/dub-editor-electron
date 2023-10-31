@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { addVideo } from '../../util/VideoTools';
+import { addVideo, convertSrtToSubtitles } from '../../util/VideoTools';
 
 import { api } from '../../util/Api';
 
@@ -19,6 +19,7 @@ import { gameAtom } from 'renderer/atoms/game.atom';
 
 let AdvancedEditor = () => {
     const [searchParams] = useSearchParams();
+    const { id } = useParams();
     const [, setInterstitialState] = useAtom(interstitialAtom);
 
     const [type] = useAtom(gameAtom);
@@ -45,9 +46,13 @@ let AdvancedEditor = () => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentPosition, setCurrentPosition] = useState(0);
     const [currentSliderPosition, setCurrentSliderPosition] = useState(0);
+    const [currentRow, setCurrentRow] = useState(0);
 
     const [videoLength, setVideoLength] = useState(0);
     const [actualVideoLength, setActualVideoLength] = useState(0);
+
+    let videoLengthMs = videoLength * 1000;
+    let defaultClipSize = videoLengthMs * 0.1;
 
     let game = '';
     if (params.type === 'rifftrax') {
@@ -62,11 +67,221 @@ let AdvancedEditor = () => {
         setWindowSize({ width: window.innerWidth, height: window.innerHeight });
     };
 
+    const isActiveElementInput = () => {
+        let activeElement = document.activeElement;
+        let inputs = ['input', 'select', 'button', 'textarea'];
+
+        return (
+            activeElement &&
+            activeElement.type !== 'range' &&
+            inputs.indexOf(activeElement.tagName.toLowerCase()) !== -1
+        );
+    };
+
+    const stateRef = useRef();
+    stateRef.current = {
+        currentSub,
+        currentRow,
+        currentSliderPosition,
+        subs,
+        isPlaying,
+        defaultClipSize,
+        videoLength,
+    };
+    const keyboardHandler = useCallback((event) => {
+        console.log('EVENT: ' + event.key);
+        if (isActiveElementInput()) {
+            if (event.key === 'Enter') {
+                document.activeElement.blur();
+                event.stopPropagation();
+            }
+
+            return;
+        }
+
+        switch (event.key) {
+            case 'ArrowUp':
+                if (!stateRef.current.currentSub === null) {
+                    return;
+                }
+                setCurrentSub((currentSub) =>
+                    Math.min(stateRef.current.subs.length - 1, currentSub + 1)
+                );
+                break;
+            case 'ArrowDown':
+                if (stateRef.current.currentSub === null) {
+                    return;
+                }
+                setCurrentSub((currentSub) => Math.max(0, currentSub - 1));
+                break;
+            case 'ArrowLeft': {
+                setCurrentSliderPosition((currentSliderPosition) =>
+                    Math.max(0, currentSliderPosition - 1000)
+                );
+                setCurrentPosition((currentPosition) =>
+                    Math.max(0, currentPosition - 1)
+                );
+
+                break;
+            }
+            case 'ArrowRight': {
+                setCurrentSliderPosition((currentSliderPosition) =>
+                    Math.min(
+                        stateRef.current.videoLength * 1000,
+                        currentSliderPosition + 1000
+                    )
+                );
+                setCurrentPosition((currentPosition) =>
+                    Math.min(stateRef.current.videoLength, currentPosition + 1)
+                );
+
+                break;
+            }
+            case ',': {
+                setCurrentSliderPosition((currentSliderPosition) =>
+                    Math.max(0, currentSliderPosition - 1000 / 60)
+                );
+                setCurrentPosition((currentPosition) =>
+                    Math.max(0, currentPosition - 1 / 60)
+                );
+
+                break;
+            }
+            case '.': {
+                setCurrentSliderPosition((currentSliderPosition) =>
+                    Math.min(
+                        stateRef.current.videoLength * 1000,
+                        currentSliderPosition + 1000 / 60
+                    )
+                );
+                setCurrentPosition((currentPosition) =>
+                    Math.min(videoLength, currentPosition + 1 / 60)
+                );
+
+                break;
+            }
+            case 'i': {
+                let currentSubObject =
+                    stateRef.current.subs[stateRef.current.currentSub];
+                subChangeHandler(
+                    'edit',
+                    {
+                        ...currentSubObject,
+                        startTime: stateRef.current.currentSliderPosition,
+                    },
+                    stateRef.current.currentSub
+                );
+                break;
+            }
+            case 'o': {
+                let currentSubObject =
+                    stateRef.current.subs[stateRef.current.currentSub];
+                subChangeHandler(
+                    'edit',
+                    {
+                        ...currentSubObject,
+                        endTime: stateRef.current.currentSliderPosition,
+                    },
+                    stateRef.current.currentSub
+                );
+                break;
+            }
+            case 'w': {
+                setCurrentRow((currentRow) => Math.max(0, currentRow - 1));
+                break;
+            }
+            case 's': {
+                setCurrentRow((currentRow) => Math.min(4, currentRow + 1));
+                break;
+            }
+            case 'n':
+                subChangeHandler('add', {
+                    rowIndex: stateRef.current.currentRow,
+                    startTime: parseInt(stateRef.current.currentSliderPosition),
+                    endTime:
+                        parseInt(stateRef.current.currentSliderPosition) +
+                        stateRef.current.defaultClipSize,
+                    text: '',
+                    type: 'subtitle',
+                    voice: 'male',
+                });
+                break;
+            case 't':
+                document.getElementById('subtitle-type').focus();
+                break;
+            case 'g':
+                document.getElementById('subtitle-voice').focus();
+                break;
+            case ' ':
+                setIsPlaying((isPlaying) => !isPlaying);
+                break;
+            case 'Enter':
+                document.getElementById('subtitle-text').focus();
+                break;
+        }
+        event.stopPropagation();
+    });
+
     useEffect(() => {
-        if (isBatch) {
+        if (id) {
+            getVideo(id);
+        } else if (isBatch) {
             getNextBatch();
         }
+
+        document.addEventListener('keydown', keyboardHandler);
+
+        return () => {
+            document.removeEventListener('keydown', keyboardHandler);
+        };
     }, []);
+
+    const getCurrentIndex = () => {
+        let index = subs.findIndex((subtitle) => {
+            return (
+                currentSliderPosition > subtitle.startTime &&
+                currentSliderPosition < subtitle.endTime
+            );
+        });
+
+        return index;
+    };
+
+    useEffect(() => {
+        let index = getCurrentIndex();
+        if (index >= 0) {
+            setCurrentSub(index);
+        }
+    }, [currentSliderPosition]);
+
+    const getVideo = async (id) => {
+        let videoDetails = await window.api.send('getVideo', {
+            id,
+            game: params.type,
+        });
+        let subtitles = convertSrtToSubtitles(videoDetails.srtBase64);
+        subtitles = subtitles.map((subtitle, index) => {
+            let voice;
+            if (subtitle.text === '[male_voice]') {
+                voice = 'male';
+            } else if (subtitle.text === '[female_voice]') {
+                voice = 'female';
+            }
+            return {
+                ...subtitle,
+                index,
+                rowIndex: 0,
+                type:
+                    subtitle.text.startsWith('[') && subtitle.text.endsWith(']')
+                        ? 'dynamic'
+                        : 'subtitle',
+                voice,
+            };
+        });
+
+        setVideoSource(`game://${params.type}/${id}.mp4`);
+        setSubs(subtitles);
+    };
 
     const getNextBatch = async () => {
         let batchClip = await handleInterstitial(
@@ -95,19 +310,6 @@ let AdvancedEditor = () => {
             return;
         }
         setVideoSource(`localfile://${filePath}`);
-    };
-
-    let convertSecondsToTimestamp = (seconds) => {
-        let h = Math.floor(seconds / 3600);
-        let m = Math.floor((seconds % 3600) / 60);
-        let s = Math.floor(seconds % 60);
-        let ms = Math.floor((seconds - Math.trunc(seconds)) * 1000);
-
-        return `${h.toString().padStart(2, '0')}:${m
-            .toString()
-            .padStart(2, '0')}:${s.toString().padStart(2, '0')},${ms
-            .toString()
-            .padStart(3, '0')}`;
     };
 
     let scrub = (milliseconds) => {
@@ -177,7 +379,7 @@ let AdvancedEditor = () => {
     const subChangeHandler = (mode, sub) => {
         if (mode === 'add') {
             let newSubIndex = 0;
-            let subList = [...subs, sub]
+            let subList = [...stateRef.current.subs, sub]
                 .sort((a, b) => a.startTime - b.startTime)
                 .map((modifiedSub, index) => {
                     if (!modifiedSub.index) {
@@ -196,11 +398,11 @@ let AdvancedEditor = () => {
                 sub.startTime = 0;
                 sub.endTime = sub.startTime + subLength;
             }
-            if (sub.endTime > videoLength * 1000) {
-                sub.endTime = videoLength * 1000;
+            if (sub.endTime > stateRef.current.videoLength * 1000) {
+                sub.endTime = stateRef.current.videoLength * 1000;
                 sub.startTime = sub.endTime - subLength;
             }
-            let subList = [...subs];
+            let subList = [...stateRef.current.subs];
             subList[sub.index] = sub;
             subList = subList.map((modifiedSub, index) => {
                 return {
@@ -210,7 +412,7 @@ let AdvancedEditor = () => {
             });
             setSubs(subList);
         } else if (mode === 'remove') {
-            let subList = [...subs];
+            let subList = [...stateRef.current.subs];
             subList.splice(sub.index, 1);
             subList = subList.map((modifiedSub, index) => {
                 return {
@@ -220,7 +422,7 @@ let AdvancedEditor = () => {
             });
             setSubs(subList);
         } else if (mode === 'sort') {
-            let subList = [...subs];
+            let subList = [...stateRef.current.subs];
             subList = subList
                 .sort((a, b) => a.startTime - b.startTime)
                 .map((modifiedSub, index) => {
@@ -244,6 +446,7 @@ let AdvancedEditor = () => {
                 <div className="editor-container">
                     <div className="top-pane">
                         <WhatTheDubPlayer
+                            width="100%"
                             videoSource={videoSource}
                             isPlaying={
                                 isPlaying &&
@@ -284,8 +487,10 @@ let AdvancedEditor = () => {
                             clipNumberOverride={batchClip?.clipNumber}
                             titleOverride={batchClip?.title}
                             currentSub={currentSub}
+                            currentRow={currentRow}
                             offset={offset}
                             subs={subs}
+                            videoLength={videoLength}
                             onSubsChange={subChangeHandler}
                             onSelectSub={setCurrentSub}
                             onSave={(title, number, collectionId) => {
@@ -307,6 +512,7 @@ let AdvancedEditor = () => {
                         rowCount={5}
                         isPlaying={isPlaying}
                         currentSub={currentSub}
+                        currentRow={currentRow}
                         offset={offset}
                         currentPosition={currentPosition * 1000}
                         currentSliderPosition={currentSliderPosition}
@@ -316,6 +522,7 @@ let AdvancedEditor = () => {
                         onSubSelect={setCurrentSub}
                         onSubsChange={subChangeHandler}
                         onSliderPositionChange={scrub}
+                        onRowChange={setCurrentRow}
                     />
                 </div>
             ) : (

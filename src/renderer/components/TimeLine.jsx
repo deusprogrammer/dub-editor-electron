@@ -33,10 +33,10 @@ export default ({
     onSubsChange,
     onStateChange,
     onSubSelect,
+    onRowChange,
     rowCount,
+    currentRow,
 }) => {
-    const [currentRow, setCurrentRow] = useState(0);
-
     if (!offset) {
         offset = 0;
     }
@@ -177,7 +177,7 @@ export default ({
                                         : 'white',
                             }}
                             onClick={() => {
-                                setCurrentRow(rowIndex);
+                                onRowChange(rowIndex);
                             }}
                             onDragOver={(event) => {
                                 if (isResizing || dragSub === null) {
@@ -206,7 +206,7 @@ export default ({
                                     startTime,
                                     endTime,
                                 });
-                                setCurrentRow(rowIndex);
+                                onRowChange(rowIndex);
                                 onSliderPositionChange(startTime + offset);
                             }}
                         >
@@ -244,7 +244,7 @@ export default ({
                                                     dragStartTime + timeDelta
                                                 );
 
-                                                setCurrentRow(rowIndex);
+                                                onRowChange(rowIndex);
                                                 onSubsChange('edit', {
                                                     ...sub,
                                                     startTime,
@@ -319,7 +319,7 @@ export default ({
                                                     endTime = videoLengthMs;
                                                 }
 
-                                                setCurrentRow(rowIndex);
+                                                onRowChange(rowIndex);
                                                 onSubsChange('edit', {
                                                     ...sub,
                                                     startTime,
@@ -384,7 +384,7 @@ export default ({
                                                     videoLengthMs
                                                 );
 
-                                                setCurrentRow(rowIndex);
+                                                onRowChange(rowIndex);
                                                 onSubsChange('edit', {
                                                     ...sub,
                                                     endTime,

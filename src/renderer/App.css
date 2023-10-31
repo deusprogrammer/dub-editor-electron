@@ -69,7 +69,6 @@ li {
 .editor-container {
     display: flex;
     width: 90%;
-    height: 100vh;
     margin: auto;
     flex-direction: column;
 }
@@ -80,12 +79,18 @@ li {
     height: 600px;
 }
 
+.video-windo {
+    flex-shrink: 1;
+    flex-grow: 1;
+}
+
 .video-window video {
     height: 100%;
 }
 
 .subtitle-window {
     flex-grow: 1;
+    flex-shrink: 0;
 }
 
 .timeline {
@@ -142,6 +147,7 @@ button.selected {
 .subtitle-list {
     max-height: 200px;
     overflow-y: scroll;
+    margin: auto;
 }
 
 .interstitial {
@@ -194,7 +200,7 @@ button.selected {
 .video-list-element {
     border: 1px solid transparent;
     border-radius: 10px;
-    width: 200px;
+    width: 100%;
 }
 
 .video-list-element:hover {
@@ -265,18 +271,20 @@ button.selected {
 
 .clip-table {
     display: grid;
-    grid-template-columns: repeat(auto-fit, 200px);
+    grid-template-columns: repeat(auto-fit, 10%);
+    align-items: end;
     gap: 10px;
 }
 
 .clip-table > div {
     display: flex;
     flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .clip-table img {
-    width: 200px;
-    height: 200px;
+    width: 100%;
     object-fit: contain;
 }
 
