@@ -111,7 +111,7 @@ let VideoList = () => {
                 videos={videos}
                 collections={collections}
                 op="open"
-                onOpen={(collectionId, id) => {
+                opFn={(collectionId, id) => {
                     navigate(`/edit/${id}`);
                 }}
                 onDelete={(id, game) => {

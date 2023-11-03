@@ -31,6 +31,9 @@ let AdvancedEditor = () => {
         height: window.innerHeight,
     });
 
+    const [titleOverride, setTitleOverride] = useState(null);
+    const [clipNumberOverride, setClipNumberOverride] = useState(null);
+
     const [batchClip, setBatchClip] = useState(null);
     const [offset, setOffset] = useState(0);
     const [startTime, setStartTime] = useState(0);
@@ -313,6 +316,12 @@ let AdvancedEditor = () => {
             };
         });
 
+        let clipTextIndex = id.lastIndexOf('-Clip');
+        let clipNumber = id.slice(clipTextIndex + 5);
+        let title = id.slice(0, clipTextIndex);
+
+        setTitleOverride(title.replaceAll('_', ' '));
+        setClipNumberOverride(parseInt(clipNumber));
         setVideoSource(`game://${params.type}/${id}.mp4`);
 
         subtitles = distributeSubs(subtitles);
@@ -588,8 +597,11 @@ let AdvancedEditor = () => {
                             currentSliderPosition={
                                 currentSliderPosition - offset
                             }
-                            clipNumberOverride={batchClip?.clipNumber}
-                            titleOverride={batchClip?.title}
+                            videoId={id}
+                            clipNumberOverride={
+                                batchClip?.clipNumber || clipNumberOverride
+                            }
+                            titleOverride={batchClip?.title || titleOverride}
                             currentSub={currentSub}
                             currentRow={currentRow}
                             offset={offset}

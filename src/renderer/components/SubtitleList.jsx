@@ -18,6 +18,7 @@ let convertMillisecondsToTimestamp = (milliseconds) => {
 
 export default ({
     subs,
+    videoId,
     clipNumberOverride,
     titleOverride,
     currentSub,
@@ -41,6 +42,18 @@ export default ({
     useEffect(() => {
         getCollections();
     }, []);
+
+    useEffect(() => {
+        if (titleOverride && clipNumberOverride) {
+            let found = Object.keys(collections).find((collectionId) => {
+                return collections[collectionId].includes(videoId);
+            });
+
+            if (found) {
+                setSelectedCollection(found);
+            }
+        }
+    }, [collections]);
 
     const getCollections = async () => {
         let collections = await CollectionAPI.getCollections(game);
@@ -117,6 +130,7 @@ export default ({
                             <th>Index</th>
                             <th>In</th>
                             <th>Out</th>
+                            <th>Type</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -145,6 +159,7 @@ export default ({
                                             sub.endTime
                                         )}
                                     </td>
+                                    <td>{sub.type}</td>
                                     <td>
                                         <button
                                             onClick={(e) => {

@@ -50,7 +50,14 @@ export default ({
 
     return (
         <div>
-            <div>
+            <div
+                style={{
+                    position: 'sticky',
+                    top: '0px',
+                    zIndex: '10',
+                    backgroundColor: 'black',
+                }}
+            >
                 <label>Search:</label>
                 <input
                     type="text"
@@ -78,7 +85,6 @@ export default ({
             <div className="clip-table" style={{ margin: 'auto' }}>
                 {videos.map((video, index) => {
                     let opClass;
-                    let opFn;
                     switch (op) {
                         case 'remove':
                             opClass = 'removeable';
@@ -97,7 +103,7 @@ export default ({
                                 <div
                                     className="video-list-element"
                                     onClick={() => {
-                                        opFn(collectionId, videoId);
+                                        opFn(collectionId, video._id);
                                     }}
                                 >
                                     <div className={opClass}>

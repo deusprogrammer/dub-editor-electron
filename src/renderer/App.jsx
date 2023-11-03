@@ -85,7 +85,8 @@ let App = (props) => {
                 {interstitialState.message}
             </Interstitial>
             {!location.pathname.includes(`/create`) &&
-            !location.pathname.includes(`/batch`) ? (
+            !location.pathname.includes(`/batch`) &&
+            !location.pathname.includes(`edit`) ? (
                 <div>
                     <header
                         style={{

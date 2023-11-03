@@ -145,7 +145,7 @@ button.selected {
 }
 
 .subtitle-list {
-    max-height: 200px;
+    height: 200px;
     overflow-y: scroll;
 }
 
@@ -198,6 +198,14 @@ button.selected {
     100% {
         transform: rotate(360deg);
     }
+}
+
+.subtitle-window table td:nth-child(2) {
+    width: 250px;
+}
+
+.subtitle-window input {
+    width: 100%;
 }
 
 .video-list-element {

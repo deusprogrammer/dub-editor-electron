@@ -72,6 +72,8 @@ export let convertSrtToSubtitles = (srtBase64) => {
     let n = 0;
 
     srt.split('\n').forEach((line) => {
+        console.log('LINE: ' + line);
+        console.log('n: ' + n);
         switch (n++) {
             case 0:
                 break;
@@ -102,7 +104,7 @@ export let convertSrtToSubtitles = (srtBase64) => {
                 break;
         }
     });
-    if (n === 0) {
+    if (subtitle.text) {
         subtitles.push(subtitle);
     }
 
