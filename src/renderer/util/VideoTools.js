@@ -68,8 +68,9 @@ export let convertSrtToSubtitles = (srtBase64) => {
     let subtitle = {};
     let regex = /(\d\d:\d\d:\d\d,\d\d\d) --> (\d\d:\d\d:\d\d,\d\d\d)/;
 
-    let srt = atob(srtBase64);
+    let srt = atob(srtBase64).replaceAll('\r', '');
     let n = 0;
+
     srt.split('\n').forEach((line) => {
         switch (n++) {
             case 0:
@@ -91,6 +92,7 @@ export let convertSrtToSubtitles = (srtBase64) => {
                 break;
             case 3:
                 if (line !== '') {
+                    subtitle.text += `\n${line}`;
                     n = 3;
                     return;
                 }
@@ -100,6 +102,9 @@ export let convertSrtToSubtitles = (srtBase64) => {
                 break;
         }
     });
+    if (n === 0) {
+        subtitles.push(subtitle);
+    }
 
     return subtitles;
 };

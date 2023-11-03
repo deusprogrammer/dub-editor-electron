@@ -147,6 +147,9 @@ button.selected {
 .subtitle-list {
     max-height: 200px;
     overflow-y: scroll;
+}
+
+.subtitle-list table {
     margin: auto;
 }
 

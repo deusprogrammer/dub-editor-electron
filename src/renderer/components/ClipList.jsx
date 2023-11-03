@@ -63,56 +63,58 @@ export default ({
                 </Link>
             </div>
             <h3>Clips</h3>
-            <table className="subtitle-list">
-                <thead>
-                    <tr>
-                        <th>Index</th>
-                        <th>In</th>
-                        <th>Out</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {clips.map((clip) => {
-                        return (
-                            <tr
-                                className={
-                                    clip.index === currentClip
-                                        ? 'selected'
-                                        : null
-                                }
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => {
-                                    onSelectClip(clip.index);
-                                }}
-                            >
-                                <td>[{clip.index}]</td>
-                                <td>
-                                    {convertMillisecondsToTimestamp(
-                                        clip.startTime
-                                    )}
-                                </td>
-                                <td>
-                                    {convertMillisecondsToTimestamp(
-                                        clip.endTime
-                                    )}
-                                </td>
-                                <td>
-                                    <button
-                                        onClick={(e) => {
-                                            onClipsChange('remove', clip);
-                                            onSelectClip(null);
-                                            e.stopPropagation();
-                                        }}
-                                    >
-                                        Remove
-                                    </button>
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
+            <div className="subtitle-list">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Index</th>
+                            <th>In</th>
+                            <th>Out</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {clips.map((clip) => {
+                            return (
+                                <tr
+                                    className={
+                                        clip.index === currentClip
+                                            ? 'selected'
+                                            : null
+                                    }
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => {
+                                        onSelectClip(clip.index);
+                                    }}
+                                >
+                                    <td>[{clip.index}]</td>
+                                    <td>
+                                        {convertMillisecondsToTimestamp(
+                                            clip.startTime
+                                        )}
+                                    </td>
+                                    <td>
+                                        {convertMillisecondsToTimestamp(
+                                            clip.endTime
+                                        )}
+                                    </td>
+                                    <td>
+                                        <button
+                                            onClick={(e) => {
+                                                onClipsChange('remove', clip);
+                                                onSelectClip(null);
+                                                e.stopPropagation();
+                                            }}
+                                        >
+                                            Remove
+                                        </button>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
             <button
                 onClick={() => {
                     onClipsChange('add', {

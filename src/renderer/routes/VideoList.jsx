@@ -1,11 +1,12 @@
 import { useAtom } from 'jotai';
 import React, { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import BatchAPI from 'renderer/api/BatchAPI';
 import ConfigAPI from 'renderer/api/ConfigAPI';
 import { gameAtom } from 'renderer/atoms/game.atom';
 import { interstitialAtom } from 'renderer/atoms/interstitial.atom';
+import ClipTable from 'renderer/components/ClipTable';
 import Interstitial, {
     handleInterstitial,
 } from 'renderer/components/interstitial/Interstitial';
@@ -19,6 +20,7 @@ let VideoList = () => {
     const [searchValue, setSearchValue] = useState(null);
     const [game] = useAtom(gameAtom);
     const [, setInterstitialState] = useAtom(interstitialAtom);
+    const navigate = useNavigate();
 
     const videos = videoMap[game];
     const collections = collectionMap[game];
@@ -105,76 +107,17 @@ let VideoList = () => {
                     </>
                 ) : null}
             </div>
-            <div>
-                <label>Search:</label>
-                <input
-                    type="text"
-                    onChange={({ target: { value } }) => {
-                        setSearchValue(value);
-                    }}
-                />
-                <label>Clip Pack:</label>
-                <select
-                    onChange={({ target: { value } }) => {
-                        setSelectedCollection(value);
-                    }}
-                >
-                    <option value="">All</option>
-                    {Object.keys(collections).map((name) => {
-                        return <option value={name}>{name}</option>;
-                    })}
-                </select>
-            </div>
-            <div className="clip-table" style={{ margin: 'auto' }}>
-                {videos
-                    .filter(({ _id, name }) => {
-                        let f = true;
-                        if (collections[selectedCollection]) {
-                            f =
-                                f &&
-                                collections[selectedCollection].includes(_id);
-                        }
-                        if (searchValue) {
-                            f =
-                                f &&
-                                name
-                                    .toLowerCase()
-                                    .includes(searchValue.toLowerCase());
-                        }
-
-                        return f;
-                    })
-                    .map((video, index) => {
-                        return (
-                            <div key={`video-${index}`}>
-                                <div className="video-list-element">
-                                    <Link to={`/videos/${video._id}`}>
-                                        <div className="openable">
-                                            <img
-                                                src={`game://${game}/${video._id}.jpg`}
-                                            />
-                                        </div>
-                                        <div>{video.name}</div>
-                                    </Link>
-                                </div>
-                                <div>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            deleteFile(
-                                                video._id,
-                                                game,
-                                                !video.disabled
-                                            );
-                                        }}
-                                    >
-                                        Delete
-                                    </button>
-                                </div>
-                            </div>
-                        );
-                    })}
-            </div>
+            <ClipTable
+                videos={videos}
+                collections={collections}
+                op="open"
+                onOpen={(collectionId, id) => {
+                    navigate(`/edit/${id}`);
+                }}
+                onDelete={(id, game) => {
+                    deleteFile(id, game);
+                }}
+            />
         </div>
     );
 };

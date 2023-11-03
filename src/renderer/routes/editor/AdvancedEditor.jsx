@@ -100,20 +100,37 @@ let AdvancedEditor = () => {
         }
 
         switch (event.key) {
-            case 'ArrowUp':
+            case 'ArrowUp': {
                 if (!stateRef.current.currentSub === null) {
                     return;
                 }
+                // let nextSub =
+                //     stateRef.current.subs[
+                //         Math.min(
+                //             stateRef.current.subs.length - 1,
+                //             stateRef.current.currentSub + 1
+                //         )
+                //     ];
+                // setCurrentSliderPosition(nextSub.startTime);
+                // setCurrentPosition(nextSub.startTime / 1000 + 1 / 1000);
                 setCurrentSub((currentSub) =>
                     Math.min(stateRef.current.subs.length - 1, currentSub + 1)
                 );
                 break;
-            case 'ArrowDown':
+            }
+            case 'ArrowDown': {
                 if (stateRef.current.currentSub === null) {
                     return;
                 }
+                // let nextSub =
+                //     stateRef.current.subs[
+                //         Math.max(0, stateRef.current.currentSub - 1)
+                //     ];
+                // setCurrentSliderPosition(nextSub.startTime);
+                // setCurrentPosition(nextSub.startTime / 1000);
                 setCurrentSub((currentSub) => Math.max(0, currentSub - 1));
                 break;
+            }
             case 'ArrowLeft': {
                 setCurrentSliderPosition((currentSliderPosition) =>
                     Math.max(0, currentSliderPosition - 1000)
@@ -137,7 +154,7 @@ let AdvancedEditor = () => {
 
                 break;
             }
-            case ',': {
+            case ';': {
                 setCurrentSliderPosition((currentSliderPosition) =>
                     Math.max(0, currentSliderPosition - 1000 / 60)
                 );
@@ -147,7 +164,7 @@ let AdvancedEditor = () => {
 
                 break;
             }
-            case '.': {
+            case "'": {
                 setCurrentSliderPosition((currentSliderPosition) =>
                     Math.min(
                         stateRef.current.videoLength * 1000,
@@ -155,7 +172,10 @@ let AdvancedEditor = () => {
                     )
                 );
                 setCurrentPosition((currentPosition) =>
-                    Math.min(videoLength, currentPosition + 1 / 60)
+                    Math.min(
+                        stateRef.current.videoLength,
+                        currentPosition + 1 / 60
+                    )
                 );
 
                 break;
@@ -184,6 +204,20 @@ let AdvancedEditor = () => {
                     },
                     stateRef.current.currentSub
                 );
+                break;
+            }
+            case '[': {
+                let currentSubObject =
+                    stateRef.current.subs[stateRef.current.currentSub];
+                setCurrentSliderPosition(currentSubObject.startTime);
+                setCurrentPosition(currentSubObject.startTime / 1000);
+                break;
+            }
+            case ']': {
+                let currentSubObject =
+                    stateRef.current.subs[stateRef.current.currentSub];
+                setCurrentSliderPosition(currentSubObject.endTime);
+                setCurrentPosition(currentSubObject.endTime / 1000);
                 break;
             }
             case 'w': {
@@ -222,6 +256,17 @@ let AdvancedEditor = () => {
         event.stopPropagation();
     });
 
+    const getCurrentIndex = () => {
+        let index = subs.findIndex((subtitle) => {
+            return (
+                currentSliderPosition > subtitle.startTime &&
+                currentSliderPosition < subtitle.endTime
+            );
+        });
+
+        return index;
+    };
+
     useEffect(() => {
         if (id) {
             getVideo(id);
@@ -235,17 +280,6 @@ let AdvancedEditor = () => {
             document.removeEventListener('keydown', keyboardHandler);
         };
     }, []);
-
-    const getCurrentIndex = () => {
-        let index = subs.findIndex((subtitle) => {
-            return (
-                currentSliderPosition > subtitle.startTime &&
-                currentSliderPosition < subtitle.endTime
-            );
-        });
-
-        return index;
-    };
 
     useEffect(() => {
         let index = getCurrentIndex();
@@ -280,6 +314,73 @@ let AdvancedEditor = () => {
         });
 
         setVideoSource(`game://${params.type}/${id}.mp4`);
+
+        subtitles = distributeSubs(subtitles);
+        setSubs(subtitles);
+    };
+
+    const overlaps = (clip1Start, clip1End, clip2Start, clip2End) => {
+        return (
+            (clip1Start <= clip2End && clip1End >= clip2Start) ||
+            (clip2Start <= clip1End && clip2End >= clip1Start)
+        );
+    };
+
+    const distributeSubs = (subtitles) => {
+        let placedSubtitles = [];
+        for (let subtitle of subtitles) {
+            let restrictedRows = [];
+            subtitle.rowIndex = 0;
+            console.log(`PLACING ${subtitle.index}`);
+            for (let placedSubtitle of placedSubtitles) {
+                console.log(
+                    `SUBTITLE ${subtitle.index} STARTS ${subtitle.startTime} AND ENDS ${subtitle.endTime} IN ${subtitle.rowIndex}`
+                );
+                console.log('AND');
+                console.log(
+                    `SUBTITLE ${placedSubtitle.index} STARTS ${placedSubtitle.startTime} AND ENDS ${placedSubtitle.endTime} IN ${placedSubtitle.rowIndex}`
+                );
+                console.log('');
+                if (
+                    overlaps(
+                        subtitle.startTime,
+                        subtitle.endTime,
+                        placedSubtitle.startTime,
+                        placedSubtitle.endTime
+                    )
+                ) {
+                    if (!restrictedRows.includes(placedSubtitle.rowIndex)) {
+                        restrictedRows.push(placedSubtitle.rowIndex);
+                    }
+                    console.log(
+                        `OVERLAP BETWEEN ${subtitle.index} IN ${subtitle.rowIndex} AND ${placedSubtitle.index} IN ${placedSubtitle.rowIndex}`
+                    );
+                    console.log(`RESTRICTED ROWS: ${restrictedRows}`);
+                }
+            }
+            for (let row = 0; row < 5; row++) {
+                if (!restrictedRows.includes(row)) {
+                    console.log(`PLACING ${subtitle.index} IN ${row}`);
+                    console.log('');
+                    subtitle.rowIndex = row;
+                    break;
+                }
+            }
+            placedSubtitles.push(subtitle);
+        }
+
+        return placedSubtitles;
+    };
+
+    const fixSubs = (videoLength) => {
+        let subtitles = [...subs];
+
+        subtitles.forEach((subtitle) => {
+            // Adjust clip if it goes over the edge of the video
+            subtitle.startTime = Math.max(0, subtitle.startTime);
+            subtitle.endTime = Math.min(videoLength, subtitle.endTime);
+        });
+
         setSubs(subtitles);
     };
 
@@ -390,6 +491,7 @@ let AdvancedEditor = () => {
                         index,
                     };
                 });
+            subList = distributeSubs(subList);
             setCurrentSub(newSubIndex);
             setSubs(subList);
         } else if (mode === 'edit') {
@@ -410,6 +512,7 @@ let AdvancedEditor = () => {
                     index,
                 };
             });
+            subList = distributeSubs(subList);
             setSubs(subList);
         } else if (mode === 'remove') {
             let subList = [...stateRef.current.subs];
@@ -477,6 +580,7 @@ let AdvancedEditor = () => {
                                     setVideoLength(video.duration);
                                 }
                                 setActualVideoLength(video.duration);
+                                fixSubs(video.duration * 1000);
                             }}
                         />
                         <SubtitleList

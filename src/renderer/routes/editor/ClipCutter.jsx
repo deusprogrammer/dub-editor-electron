@@ -45,7 +45,7 @@ let ClipCutter = () => {
     const [videoLength, setVideoLength] = useState(0);
 
     let videoLengthMs = videoLength * 1000;
-    let defaultClipSize = videoLengthMs * 0.1;
+    let defaultClipSize = 8000; // The recommended maximum length
 
     let game = '';
     if (params.type === 'rifftrax') {
@@ -89,20 +89,37 @@ let ClipCutter = () => {
         }
 
         switch (event.key) {
-            case 'ArrowUp':
+            case 'ArrowUp': {
                 if (stateRef.current.currentClip === null) {
                     return;
                 }
+                // let nextClip =
+                //     stateRef.current.clips[
+                //         Math.min(
+                //             stateRef.current.clips.length - 1,
+                //             stateRef.current.currentClip + 1
+                //         )
+                //     ];
+                // setCurrentSliderPosition(nextClip.startTime);
+                // setCurrentPosition(nextClip.startTime / 1000);
                 setCurrentClip((currentClip) =>
                     Math.min(stateRef.current.clips.length - 1, currentClip + 1)
                 );
                 break;
-            case 'ArrowDown':
+            }
+            case 'ArrowDown': {
                 if (stateRef.current.currentClip === null) {
                     return;
                 }
+                // let nextClip =
+                //     stateRef.current.clips[
+                //         Math.max(0, stateRef.current.currentClip - 1)
+                //     ];
+                // setCurrentSliderPosition(nextClip.startTime);
+                // setCurrentPosition(nextClip.startTime / 1000);
                 setCurrentClip((currentClip) => Math.max(0, currentClip - 1));
                 break;
+            }
             case 'ArrowLeft':
                 setCurrentSliderPosition((currentSliderPosition) =>
                     Math.max(0, currentSliderPosition - 1000)
@@ -122,7 +139,7 @@ let ClipCutter = () => {
                     Math.min(stateRef.current.videoLength, currentPosition + 1)
                 );
                 break;
-            case ',':
+            case ';':
                 setCurrentSliderPosition((currentSliderPosition) =>
                     Math.max(0, currentSliderPosition - 1000 / 60)
                 );
@@ -130,7 +147,7 @@ let ClipCutter = () => {
                     Math.max(0, currentPosition - 1 / 60)
                 );
                 break;
-            case '.':
+            case "'":
                 setCurrentSliderPosition((currentSliderPosition) =>
                     Math.min(
                         stateRef.current.videoLength * 1000,
@@ -170,6 +187,32 @@ let ClipCutter = () => {
                 );
                 break;
             }
+            case '[': {
+                let currentClipObject =
+                    stateRef.current.clips[stateRef.current.currentClip];
+                setCurrentSliderPosition(currentClipObject.startTime);
+                setCurrentPosition(currentClipObject.startTime / 1000);
+                break;
+            }
+            case ']': {
+                let currentClipObject =
+                    stateRef.current.clips[stateRef.current.currentClip];
+                setCurrentSliderPosition(currentClipObject.endTime);
+                setCurrentPosition(currentClipObject.endTime / 1000);
+                break;
+            }
+            case 'k':
+                setCurrentSliderPosition(
+                    stateRef.current.currentClip.startTime
+                );
+                setCurrentPosition(
+                    stateRef.current.currentClip.startTime / 1000
+                );
+                break;
+            case 'l':
+                setCurrentSliderPosition(stateRef.current.currentClip.endTime);
+                setCurrentPosition(stateRef.current.currentClip.endTime / 1000);
+                break;
             case 'n':
                 clipChangeHandler('add', {
                     rowIndex: 0,

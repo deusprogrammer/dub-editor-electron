@@ -7,6 +7,7 @@ import { handleInterstitial } from 'renderer/components/interstitial/Interstitia
 import { useAtom } from 'jotai';
 import { interstitialAtom } from 'renderer/atoms/interstitial.atom';
 import { gameAtom } from 'renderer/atoms/game.atom';
+import ClipTable from 'renderer/components/ClipTable';
 
 export default () => {
     const [game] = useAtom(gameAtom);
@@ -267,72 +268,41 @@ export default () => {
             );
         } else if (editMode === 'clips') {
             let collectionId = selected;
+            let filteredCollections = { ...collections };
+            delete filteredCollections[selected];
             return (
                 <div>
                     {menuOptions}
                     <div className="clip-pack-edit">
                         <div>
                             <h2>Clip Pack {collectionId}</h2>
-                            <div className="clip-table">
-                                {collections[collectionId].map((videoId) => {
-                                    return (
-                                        <div>
-                                            <div
-                                                className="video-list-element"
-                                                onClick={() => {
-                                                    removeFromCollection(
-                                                        collectionId,
-                                                        videoId
-                                                    );
-                                                }}
-                                            >
-                                                <div className="removable">
-                                                    <img
-                                                        src={`game://${game}/${videoId}.jpg`}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    {videoId.replace(/_/g, ' ')}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                            <ClipTable
+                                videos={videos}
+                                collections={collections}
+                                collectionId={collectionId}
+                                op="remove"
+                                opFn={(collectionId, videoId) => {
+                                    removeFromCollection(collectionId, videoId);
+                                }}
+                                includeDelete={false}
+                            />
                         </div>
                         <div>
                             <h2>Videos Not in Clip Pack</h2>
-                            <div className="clip-table">
-                                {videos
-                                    .filter(
-                                        (video) =>
-                                            !collections[collectionId].includes(
-                                                video._id
-                                            ) && video._id.startsWith('_')
-                                    )
-                                    .map(({ _id: videoId }) => {
-                                        return (
-                                            <div
-                                                className="video-list-element"
-                                                onClick={() => {
-                                                    addToCollection(
-                                                        collectionId,
-                                                        videoId
-                                                    );
-                                                }}
-                                            >
-                                                <div className="addable">
-                                                    <img
-                                                        src={`game://${game}/${videoId}.jpg`}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    {videoId.replace(/_/g, ' ')}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                            </div>
+                            <ClipTable
+                                videos={videos.filter(
+                                    (video) =>
+                                        !collections[collectionId].includes(
+                                            video._id
+                                        ) && video._id.startsWith('_')
+                                )}
+                                collections={filteredCollections}
+                                op="add"
+                                opFn={(collectionId, videoId) => {
+                                    addToCollection(collectionId, videoId);
+                                }}
+                                includeDelete={false}
+                            />
                         </div>
                     </div>
                 </div>

@@ -110,54 +110,58 @@ export default ({
                 </Link>
             </div>
             <h3>Subtitles</h3>
-            <table className="subtitle-list">
-                <thead>
-                    <tr>
-                        <th>Index</th>
-                        <th>In</th>
-                        <th>Out</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {subs.map((sub) => {
-                        return (
-                            <tr
-                                className={
-                                    sub.index === currentSub ? 'selected' : null
-                                }
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => {
-                                    onSelectSub(sub.index);
-                                }}
-                            >
-                                <td>[{sub.index}]</td>
-                                <td>
-                                    {convertMillisecondsToTimestamp(
-                                        sub.startTime
-                                    )}
-                                </td>
-                                <td>
-                                    {convertMillisecondsToTimestamp(
-                                        sub.endTime
-                                    )}
-                                </td>
-                                <td>
-                                    <button
-                                        onClick={(e) => {
-                                            onSubsChange('remove', sub);
-                                            onSelectSub(null);
-                                            e.stopPropagation();
-                                        }}
-                                    >
-                                        Remove
-                                    </button>
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
+            <div className="subtitle-list">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Index</th>
+                            <th>In</th>
+                            <th>Out</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {subs.map((sub) => {
+                            return (
+                                <tr
+                                    className={
+                                        sub.index === currentSub
+                                            ? 'selected'
+                                            : null
+                                    }
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => {
+                                        onSelectSub(sub.index);
+                                    }}
+                                >
+                                    <td>[{sub.index}]</td>
+                                    <td>
+                                        {convertMillisecondsToTimestamp(
+                                            sub.startTime
+                                        )}
+                                    </td>
+                                    <td>
+                                        {convertMillisecondsToTimestamp(
+                                            sub.endTime
+                                        )}
+                                    </td>
+                                    <td>
+                                        <button
+                                            onClick={(e) => {
+                                                onSubsChange('remove', sub);
+                                                onSelectSub(null);
+                                                e.stopPropagation();
+                                            }}
+                                        >
+                                            Remove
+                                        </button>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
             <button
                 onClick={() => {
                     onSubsChange('add', {
