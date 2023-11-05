@@ -854,17 +854,19 @@ ipcMain.handle(
         );
 
         let id = createClipName(title, clipNumber);
-
         const {clip: videoFilePath, subtitle: subFilePath, thumbnail: thumbNailPath} = getClipPaths(id, game);
 
-        log.info('SAVING TO ' + videoFilePath + '\n' + subFilePath);
+        // Only store file if it's not already here.
+        if (videoSource.startsWith("localfile://")) {
+            log.info('SAVING TO ' + videoFilePath + '\n' + subFilePath);
+            // Copy video file from where ever it was previously located.
+            fs.copyFileSync(videoSource.replace("localfile://", ""), videoFilePath);
 
-        fs.copyFileSync(videoSource.replace("localfile://", ""), videoFilePath);
+            // Create a thumbnail
+            const thumbnailTime = '00:00:01';
+            createThumbnail(videoFilePath, thumbnailTime, thumbNailPath);
+        }
         fs.writeFileSync(subFilePath, subtitles);
-
-        // Create a thumbnail
-        const thumbnailTime = '00:00:01';
-        createThumbnail(videoFilePath, thumbnailTime, thumbNailPath);
 
         return id;
     }

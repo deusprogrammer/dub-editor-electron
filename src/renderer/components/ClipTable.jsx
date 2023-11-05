@@ -75,8 +75,15 @@ export default ({
                         >
                             <option value="">All</option>
                             <option value="unsorted">Unsorted</option>
-                            {Object.keys(collections).map((name) => {
-                                return <option value={name}>{name}</option>;
+                            {Object.keys(collections).map((name, index) => {
+                                return (
+                                    <option
+                                        key={`collection-${index}`}
+                                        value={name}
+                                    >
+                                        {name}
+                                    </option>
+                                );
                             })}
                         </select>
                     </>

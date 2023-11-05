@@ -76,52 +76,7 @@ export default ({
 
     return (
         <div className="timeline">
-            <div>
-                <button
-                    onClick={() => {
-                        onSliderPositionChange(
-                            Math.max(
-                                0,
-                                currentSliderPosition + offset - 1000 / 60
-                            )
-                        );
-                    }}
-                >
-                    &lt;
-                </button>
-                {!isPlaying && currentPosition < videoLength ? (
-                    <button
-                        onClick={() => {
-                            if (currentSliderPosition < videoLengthMs) {
-                                onStateChange(true);
-                            }
-                        }}
-                    >
-                        Play
-                    </button>
-                ) : (
-                    <button
-                        onClick={() => {
-                            onStateChange(false);
-                        }}
-                    >
-                        Pause
-                    </button>
-                )}
-                <button
-                    onClick={() => {
-                        if (currentSliderPosition < videoLengthMs) {
-                            onSliderPositionChange(
-                                currentSliderPosition + offset + 1000 / 60
-                            );
-                        }
-                    }}
-                >
-                    &gt;
-                </button>
-            </div>
             <div style={{ textAlign: 'left' }}>
-                <AddSubButton onClick={createNewSub} />
                 <span>
                     {convertMillisecondsToTimestamp(currentSliderPosition)}
                 </span>
@@ -129,7 +84,9 @@ export default ({
             <input
                 type="range"
                 style={{
-                    width: `${timelineWidth}px`,
+                    position: 'relative',
+                    left: '-8px',
+                    width: `${timelineWidth + 16}px`,
                     padding: '0px',
                     margin: '0px',
                 }}

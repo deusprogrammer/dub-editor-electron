@@ -13,7 +13,7 @@ export default ({ isOpen, children }) => {
         return (
             <div className="interstitial">
                 <div>
-                    <div class="lds-dual-ring"></div>
+                    <div className="lds-dual-ring"></div>
                     <br />
                     <br />
                     <div className="interstitial-message">{children}</div>
