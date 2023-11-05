@@ -135,48 +135,50 @@ let App = (props) => {
                         </div>
                     </header>
                     <hr />
-                    <Link
-                        className={({ isActive }) =>
-                            isActive ? 'active' : null
-                        }
-                        to={`/videos`}
-                    >
-                        Clips
-                    </Link>
-                    |
-                    <Link
-                        className={({ isActive }) =>
-                            isActive ? 'active' : null
-                        }
-                        to={`/collections`}
-                    >
-                        Packs
-                    </Link>
-                    |
-                    <Link
-                        className={({ isActive }) =>
-                            isActive ? 'active' : null
-                        }
-                        to={`/config`}
-                    >
-                        Config
-                    </Link>
-                    |
-                    <Link
-                        className={({ isActive }) =>
-                            isActive ? 'active' : null
-                        }
-                        to={`/about`}
-                    >
-                        About
-                    </Link>
-                    |
-                    <a
-                        href="https://ko-fi.com/michaelcmain52278"
-                        target="_blank"
-                    >
-                        Donate
-                    </a>
+                    <nav>
+                        <Link
+                            className={({ isActive }) =>
+                                isActive ? 'active' : null
+                            }
+                            to={`/videos`}
+                        >
+                            Clips
+                        </Link>
+                        |
+                        <Link
+                            className={({ isActive }) =>
+                                isActive ? 'active' : null
+                            }
+                            to={`/collections`}
+                        >
+                            Packs
+                        </Link>
+                        |
+                        <Link
+                            className={({ isActive }) =>
+                                isActive ? 'active' : null
+                            }
+                            to={`/config`}
+                        >
+                            Config
+                        </Link>
+                        |
+                        <Link
+                            className={({ isActive }) =>
+                                isActive ? 'active' : null
+                            }
+                            to={`/about`}
+                        >
+                            About
+                        </Link>
+                        |
+                        <a
+                            href="https://ko-fi.com/michaelcmain52278"
+                            target="_blank"
+                        >
+                            Donate
+                        </a>
+                    </nav>
                 </div>
             ) : null}
             <div style={{ minHeight: '50vh' }}>

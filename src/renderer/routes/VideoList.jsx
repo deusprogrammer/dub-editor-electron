@@ -117,6 +117,7 @@ let VideoList = () => {
                 onDelete={(id, game) => {
                     deleteFile(id, game);
                 }}
+                includeDelete={true}
             />
         </div>
     );
