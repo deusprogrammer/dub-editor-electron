@@ -105,47 +105,64 @@ let ClipCutter = () => {
                 setCurrentClip((currentClip) => Math.max(0, currentClip - 1));
                 break;
             }
-            case 'ArrowLeft':
+            case 'ArrowLeft': {
                 setCurrentSliderPosition((currentSliderPosition) =>
                     Math.max(0, currentSliderPosition - 1000)
                 );
-                setCurrentPosition((currentPosition) =>
-                    Math.max(0, currentPosition - 1)
+                setCurrentPosition(
+                    Math.max(
+                        0,
+                        stateRef.current.currentSliderPosition / 1000 - 1
+                    )
                 );
+
                 break;
-            case 'ArrowRight':
+            }
+            case 'ArrowRight': {
                 setCurrentSliderPosition((currentSliderPosition) =>
                     Math.min(
                         stateRef.current.videoLength * 1000,
                         currentSliderPosition + 1000
                     )
                 );
-                setCurrentPosition((currentPosition) =>
-                    Math.min(stateRef.current.videoLength, currentPosition + 1)
+                setCurrentPosition(
+                    Math.min(
+                        stateRef.current.videoLength,
+                        stateRef.current.currentSliderPosition / 1000 + 1
+                    )
                 );
+
                 break;
-            case ';':
+            }
+            case ';': {
                 setCurrentSliderPosition((currentSliderPosition) =>
                     Math.max(0, currentSliderPosition - 1000 / 60)
                 );
-                setCurrentPosition((currentPosition) =>
-                    Math.max(0, currentPosition - 1 / 60)
+                setCurrentPosition(
+                    Math.max(
+                        0,
+                        stateRef.current.currentSliderPosition / 1000 - 1 / 60
+                    )
                 );
+
                 break;
-            case "'":
+            }
+            case "'": {
                 setCurrentSliderPosition((currentSliderPosition) =>
                     Math.min(
                         stateRef.current.videoLength * 1000,
                         currentSliderPosition + 1000 / 60
                     )
                 );
-                setCurrentPosition((currentPosition) =>
+                setCurrentPosition(
                     Math.min(
                         stateRef.current.videoLength,
-                        currentPosition + 1 / 60
+                        stateRef.current.currentSliderPosition / 1000 + 1 / 60
                     )
                 );
+
                 break;
+            }
             case 'i': {
                 let currentClipObject =
                     stateRef.current.clips[stateRef.current.currentClip];

@@ -847,10 +847,31 @@ ipcMain.handle('getPreviewImage', (event, { collectionId, game }) => {
 });
 
 ipcMain.handle(
+    'renameVideo',
+    (event, { id, newTitle, game }) => {
+        log.info(
+            `RENAMING ${id} to new title ${newTitle} for game ${game}`
+        );
+
+        const {clip: videoFilePath, subtitle: subFilePath, thumbnail: thumbNailPath} = getClipPaths(id, game);
+        const {clip: newVideoFilePath, subtitle: newSubFilePath, thumbnail: newThumbNailPath} = getClipPaths(newTitle.replaceAll(' ', '_'), game);
+
+        log.info(`RENAMING ${videoFilePath} to ${newVideoFilePath}`);
+        fs.renameSync(videoFilePath, newVideoFilePath);
+
+        log.info(`RENAMING ${subFilePath} to ${newSubFilePath}`);
+        fs.renameSync(subFilePath, newSubFilePath);
+
+        log.info(`RENAMING ${thumbNailPath} to ${newThumbNailPath}`);
+        fs.renameSync(thumbNailPath, newThumbNailPath);
+    }
+);
+
+ipcMain.handle(
     'storeVideo',
     (event, { videoSource, subtitles, title, clipNumber, game }) => {
         log.info(
-            `STORING ${title}-${clipNumber} for game ${game} with subtitles ${subtitles}`
+            `STORING ${title}-${clipNumber} for game ${game} with subtitles \n${subtitles}`
         );
 
         let id = createClipName(title, clipNumber);
@@ -858,7 +879,7 @@ ipcMain.handle(
 
         // Only store file if it's not already here.
         if (videoSource.startsWith("localfile://")) {
-            log.info('SAVING TO ' + videoFilePath + '\n' + subFilePath);
+            log.info('SAVING VIDEO TO ' + videoFilePath + '\n' + subFilePath);
             // Copy video file from where ever it was previously located.
             fs.copyFileSync(videoSource.replace("localfile://", ""), videoFilePath);
 
@@ -866,6 +887,7 @@ ipcMain.handle(
             const thumbnailTime = '00:00:01';
             createThumbnail(videoFilePath, thumbnailTime, thumbNailPath);
         }
+        log.info('SAVING SUBS TO ' + subFilePath);
         fs.writeFileSync(subFilePath, subtitles);
 
         return id;

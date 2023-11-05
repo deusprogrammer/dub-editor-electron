@@ -33,6 +33,7 @@ let AdvancedEditor = () => {
 
     const [titleOverride, setTitleOverride] = useState(null);
     const [clipNumberOverride, setClipNumberOverride] = useState(null);
+    const [isEdit, setIsEdit] = useState(id !== undefined);
 
     const [batchClip, setBatchClip] = useState(null);
     const [offset, setOffset] = useState(0);
@@ -92,7 +93,6 @@ let AdvancedEditor = () => {
         videoLength,
     };
     const keyboardHandler = useCallback((event) => {
-        console.log('EVENT: ' + event.key);
         if (isActiveElementInput()) {
             if (event.key === 'Enter') {
                 document.activeElement.blur();
@@ -107,15 +107,6 @@ let AdvancedEditor = () => {
                 if (!stateRef.current.currentSub === null) {
                     return;
                 }
-                // let nextSub =
-                //     stateRef.current.subs[
-                //         Math.min(
-                //             stateRef.current.subs.length - 1,
-                //             stateRef.current.currentSub + 1
-                //         )
-                //     ];
-                // setCurrentSliderPosition(nextSub.startTime);
-                // setCurrentPosition(nextSub.startTime / 1000 + 1 / 1000);
                 setCurrentSub((currentSub) =>
                     Math.min(stateRef.current.subs.length - 1, currentSub + 1)
                 );
@@ -125,12 +116,6 @@ let AdvancedEditor = () => {
                 if (stateRef.current.currentSub === null) {
                     return;
                 }
-                // let nextSub =
-                //     stateRef.current.subs[
-                //         Math.max(0, stateRef.current.currentSub - 1)
-                //     ];
-                // setCurrentSliderPosition(nextSub.startTime);
-                // setCurrentPosition(nextSub.startTime / 1000);
                 setCurrentSub((currentSub) => Math.max(0, currentSub - 1));
                 break;
             }
@@ -138,8 +123,11 @@ let AdvancedEditor = () => {
                 setCurrentSliderPosition((currentSliderPosition) =>
                     Math.max(0, currentSliderPosition - 1000)
                 );
-                setCurrentPosition((currentPosition) =>
-                    Math.max(0, currentPosition - 1)
+                setCurrentPosition(
+                    Math.max(
+                        0,
+                        stateRef.current.currentSliderPosition / 1000 - 1
+                    )
                 );
 
                 break;
@@ -151,8 +139,11 @@ let AdvancedEditor = () => {
                         currentSliderPosition + 1000
                     )
                 );
-                setCurrentPosition((currentPosition) =>
-                    Math.min(stateRef.current.videoLength, currentPosition + 1)
+                setCurrentPosition(
+                    Math.min(
+                        stateRef.current.videoLength,
+                        stateRef.current.currentSliderPosition / 1000 + 1
+                    )
                 );
 
                 break;
@@ -161,8 +152,11 @@ let AdvancedEditor = () => {
                 setCurrentSliderPosition((currentSliderPosition) =>
                     Math.max(0, currentSliderPosition - 1000 / 60)
                 );
-                setCurrentPosition((currentPosition) =>
-                    Math.max(0, currentPosition - 1 / 60)
+                setCurrentPosition(
+                    Math.max(
+                        0,
+                        stateRef.current.currentSliderPosition / 1000 - 1 / 60
+                    )
                 );
 
                 break;
@@ -174,10 +168,10 @@ let AdvancedEditor = () => {
                         currentSliderPosition + 1000 / 60
                     )
                 );
-                setCurrentPosition((currentPosition) =>
+                setCurrentPosition(
                     Math.min(
                         stateRef.current.videoLength,
-                        currentPosition + 1 / 60
+                        stateRef.current.currentSliderPosition / 1000 + 1 / 60
                     )
                 );
 
@@ -249,11 +243,11 @@ let AdvancedEditor = () => {
             case 'g':
                 document.getElementById('subtitle-voice').focus();
                 break;
+            case 'e':
+                document.getElementById('subtitle-text').focus();
+                break;
             case ' ':
                 setIsPlaying((isPlaying) => !isPlaying);
-                break;
-            case 'Enter':
-                document.getElementById('subtitle-text').focus();
                 break;
         }
         event.stopPropagation();
@@ -320,7 +314,7 @@ let AdvancedEditor = () => {
         let clipNumber = id.slice(clipTextIndex + 5);
         let title = id.slice(0, clipTextIndex);
 
-        setTitleOverride(title.replaceAll('_', ' '));
+        setTitleOverride(title.slice(1).replaceAll('_', ' '));
         setClipNumberOverride(parseInt(clipNumber));
         setVideoSource(`game://${params.type}/${id}.mp4`);
 
@@ -340,16 +334,7 @@ let AdvancedEditor = () => {
         for (let subtitle of subtitles) {
             let restrictedRows = [];
             subtitle.rowIndex = 0;
-            console.log(`PLACING ${subtitle.index}`);
             for (let placedSubtitle of placedSubtitles) {
-                console.log(
-                    `SUBTITLE ${subtitle.index} STARTS ${subtitle.startTime} AND ENDS ${subtitle.endTime} IN ${subtitle.rowIndex}`
-                );
-                console.log('AND');
-                console.log(
-                    `SUBTITLE ${placedSubtitle.index} STARTS ${placedSubtitle.startTime} AND ENDS ${placedSubtitle.endTime} IN ${placedSubtitle.rowIndex}`
-                );
-                console.log('');
                 if (
                     overlaps(
                         subtitle.startTime,
@@ -361,16 +346,10 @@ let AdvancedEditor = () => {
                     if (!restrictedRows.includes(placedSubtitle.rowIndex)) {
                         restrictedRows.push(placedSubtitle.rowIndex);
                     }
-                    console.log(
-                        `OVERLAP BETWEEN ${subtitle.index} IN ${subtitle.rowIndex} AND ${placedSubtitle.index} IN ${placedSubtitle.rowIndex}`
-                    );
-                    console.log(`RESTRICTED ROWS: ${restrictedRows}`);
                 }
             }
             for (let row = 0; row < 5; row++) {
                 if (!restrictedRows.includes(row)) {
-                    console.log(`PLACING ${subtitle.index} IN ${row}`);
-                    console.log('');
                     subtitle.rowIndex = row;
                     break;
                 }
@@ -435,7 +414,7 @@ let AdvancedEditor = () => {
     };
 
     let addVideoToGame = async (videoName, clipNumber, collectionId) => {
-        if (await checkClipExists(videoName, clipNumber)) {
+        if (!isEdit && (await checkClipExists(videoName, clipNumber))) {
             setError('Clip with this name and number already exists');
             return;
         }
@@ -568,6 +547,7 @@ let AdvancedEditor = () => {
                                         currentSliderPosition <=
                                             batchClip.clip.endTime))
                             }
+                            controls={true}
                             videoPosition={currentPosition}
                             subs={subs}
                             offset={offset}
@@ -601,6 +581,7 @@ let AdvancedEditor = () => {
                             clipNumberOverride={
                                 batchClip?.clipNumber || clipNumberOverride
                             }
+                            isEdit={isEdit}
                             titleOverride={batchClip?.title || titleOverride}
                             currentSub={currentSub}
                             currentRow={currentRow}

@@ -1,7 +1,10 @@
 import { useAtom } from 'jotai';
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { gameAtom } from 'renderer/atoms/game.atom';
+import { interstitialAtom } from 'renderer/atoms/interstitial.atom';
+import { handleInterstitial } from 'renderer/components/interstitial/Interstitial';
 
 export default ({
     videos,
@@ -11,13 +14,47 @@ export default ({
     op,
     opFn,
     includeDelete,
+    includeRename,
     onDelete,
+    onRename,
 }) => {
     const [selectedCollection, setSelectedCollection] = useState(
         collectionId || ''
     );
     const [searchValue, setSearchValue] = useState(null);
+    const [renaming, setRenaming] = useState(null);
+    const [newTitle, setNewTitle] = useState(null);
     const [game, setGame] = useAtom(gameAtom);
+    const [, setInterstitialState] = useAtom(interstitialAtom);
+
+    const renameClip = async () => {
+        console.log('RENAMED');
+        await handleInterstitial(
+            window.api.send('renameVideo', { id: renaming, game, newTitle }),
+            (open) => {
+                setInterstitialState(open);
+            }
+        );
+        toast('Renamed video', { type: 'info' });
+
+        if (onRename) {
+            onRename();
+        }
+    };
+
+    const deleteClip = async (id, game, isActive) => {
+        await handleInterstitial(
+            window.api.send('deleteVideo', { id, game, isActive }),
+            (open) => {
+                setInterstitialState(open);
+            }
+        );
+        toast('Deleted video', { type: 'info' });
+
+        if (onDelete) {
+            onDelete();
+        }
+    };
 
     let sortedVideos = Object.keys(collections).reduce((prev, curr) => {
         let collection = collections[curr];
@@ -119,15 +156,52 @@ export default ({
                                             src={`game://${game}/${video._id}.jpg`}
                                         />
                                     </div>
-                                    <div>{video._id.replace(/_/g, ' ')}</div>
                                 </div>
                             </div>
+                            {renaming !== video._id ? (
+                                <div>{video._id.replace(/_/g, ' ')}</div>
+                            ) : (
+                                <div>
+                                    <input
+                                        value={newTitle}
+                                        onChange={({ target: { value } }) => {
+                                            setNewTitle(value);
+                                        }}
+                                    />
+                                </div>
+                            )}
+                            {includeRename ? (
+                                <div>
+                                    {renaming !== video._id ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setNewTitle(
+                                                    video._id.replace(/_/g, ' ')
+                                                );
+                                                setRenaming(video._id);
+                                            }}
+                                        >
+                                            Rename
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => {
+                                                renameClip();
+                                                setRenaming(null);
+                                            }}
+                                        >
+                                            Done
+                                        </button>
+                                    )}
+                                </div>
+                            ) : null}
                             {includeDelete ? (
                                 <div>
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            onDelete(video._id, game);
+                                            deleteClip(video._id, game);
                                         }}
                                     >
                                         Delete

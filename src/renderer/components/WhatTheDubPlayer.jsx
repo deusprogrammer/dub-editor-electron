@@ -92,7 +92,7 @@ export default (props) => {
 
             if (currentIndex >= 0) {
                 let currentSubtitle = props.subs[currentIndex];
-                if (currentSubtitle.type === 'dynamic') {
+                if (currentSubtitle?.type === 'dynamic') {
                     setMuted(false);
                 }
             }

@@ -114,10 +114,14 @@ let VideoList = () => {
                 opFn={(collectionId, id) => {
                     navigate(`/edit/${id}`);
                 }}
-                onDelete={(id, game) => {
-                    deleteFile(id, game);
+                onDelete={() => {
+                    loadVideos();
+                }}
+                onRename={() => {
+                    loadVideos();
                 }}
                 includeDelete
+                includeRename
                 allowCollectionFilter
             />
         </div>

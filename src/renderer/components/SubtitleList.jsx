@@ -30,6 +30,7 @@ export default ({
     onSelectSub,
     onRemoveSub,
     onSave,
+    isEdit,
 }) => {
     const [clipTitle, setClipTitle] = useState(titleOverride || '');
     const [clipNumber, setClipNumber] = useState(clipNumberOverride || 1);
@@ -75,6 +76,7 @@ export default ({
                                 onChange={({ target: { value } }) => {
                                     setClipTitle(value);
                                 }}
+                                disabled={isEdit}
                             />
                         </td>
                     </tr>
@@ -87,6 +89,7 @@ export default ({
                                 onChange={({ target: { value } }) => {
                                     setClipNumber(value);
                                 }}
+                                disabled={isEdit}
                             />
                         </td>
                     </tr>
@@ -98,6 +101,7 @@ export default ({
                                 onChange={({ target: { value } }) => {
                                     setSelectedCollection(value);
                                 }}
+                                disabled={isEdit}
                             >
                                 <option key="_none">None</option>
                                 {Object.keys(collections).map(
