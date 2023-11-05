@@ -223,13 +223,13 @@ button.selected {
     opacity: 0.5;
 }
 
-.removable,
+.removeable,
 .addable,
 .openable {
     position: relative;
 }
 
-.removable:hover::after {
+.removeable:hover::after {
     position: absolute;
     top: 50%;
     left: 50%;

@@ -7,6 +7,7 @@ export default ({
     videos,
     collections,
     collectionId,
+    allowCollectionFilter,
     op,
     opFn,
     includeDelete,
@@ -65,7 +66,7 @@ export default ({
                         setSearchValue(value);
                     }}
                 />
-                {!collectionId ? (
+                {allowCollectionFilter ? (
                     <>
                         <label>Clip Pack:</label>
                         <select

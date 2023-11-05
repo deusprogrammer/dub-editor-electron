@@ -297,6 +297,8 @@ export default () => {
                                         ) && video._id.startsWith('_')
                                 )}
                                 collections={filteredCollections}
+                                collectionId={collectionId}
+                                allowCollectionFilter
                                 op="add"
                                 opFn={(collectionId, videoId) => {
                                     addToCollection(collectionId, videoId);

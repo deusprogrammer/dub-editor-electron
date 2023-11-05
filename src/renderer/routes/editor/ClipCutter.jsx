@@ -93,15 +93,6 @@ let ClipCutter = () => {
                 if (stateRef.current.currentClip === null) {
                     return;
                 }
-                // let nextClip =
-                //     stateRef.current.clips[
-                //         Math.min(
-                //             stateRef.current.clips.length - 1,
-                //             stateRef.current.currentClip + 1
-                //         )
-                //     ];
-                // setCurrentSliderPosition(nextClip.startTime);
-                // setCurrentPosition(nextClip.startTime / 1000);
                 setCurrentClip((currentClip) =>
                     Math.min(stateRef.current.clips.length - 1, currentClip + 1)
                 );
@@ -111,12 +102,6 @@ let ClipCutter = () => {
                 if (stateRef.current.currentClip === null) {
                     return;
                 }
-                // let nextClip =
-                //     stateRef.current.clips[
-                //         Math.max(0, stateRef.current.currentClip - 1)
-                //     ];
-                // setCurrentSliderPosition(nextClip.startTime);
-                // setCurrentPosition(nextClip.startTime / 1000);
                 setCurrentClip((currentClip) => Math.max(0, currentClip - 1));
                 break;
             }

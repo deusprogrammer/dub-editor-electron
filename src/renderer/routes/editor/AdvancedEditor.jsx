@@ -568,7 +568,6 @@ let AdvancedEditor = () => {
                                         currentSliderPosition <=
                                             batchClip.clip.endTime))
                             }
-                            controls={true}
                             videoPosition={currentPosition}
                             subs={subs}
                             offset={offset}
