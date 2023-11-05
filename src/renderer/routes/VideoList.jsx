@@ -62,17 +62,6 @@ let VideoList = () => {
         return <Interstitial isOpen={true} children={<p>Loading Media</p>} />;
     }
 
-    const deleteFile = async (id, game, isActive) => {
-        await handleInterstitial(
-            window.api.send('deleteVideo', { id, game, isActive }),
-            (open) => {
-                setInterstitialState(open);
-            }
-        );
-        toast('Deleted video', { type: 'info' });
-        loadVideos();
-    };
-
     let sortedVideos = Object.keys(collections).reduce((prev, curr) => {
         let collection = collections[curr];
         collection.forEach((video) => {

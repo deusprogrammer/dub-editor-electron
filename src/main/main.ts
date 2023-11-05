@@ -192,6 +192,10 @@ const addToCollection = (
     collectionId: string,
     videoIdList: Array<string>
 ) => {
+    log.info(
+        `ADDING ${videoIdList} for game ${game} to collection ${collectionId}`
+    );
+
     // If the collection isn't present, create a key and an empty array for it.
     if (!(collectionId in collections[game])) {
         collections[game][collectionId] = [];
@@ -204,6 +208,10 @@ const addToCollection = (
         }
     });
 
+    const collection = collections[game][collectionId];
+    collection.sort();
+    collections[game][collectionId] = collection;
+
     const {collectionMeta} = getConfigDirectories();
 
     log.info("WRITING TO " + collectionMeta);
@@ -212,6 +220,35 @@ const addToCollection = (
     fs.writeFileSync(collectionMeta, JSON.stringify(collections, null, 5));
     return collections[game];
 };
+
+const removeFromCollection = (game: string, collectionId: string, videoId: string) => {
+    log.info(
+        `REMOVING ${videoId} for game ${game} from collection ${collectionId}`
+    );
+
+    // If the collection isn't present, return immediately.
+    if (!(collectionId in collections[game])) {
+        log.info("COLLECTION NOT PRESENT");
+        return;
+    }
+
+    // Filter out videoId that's being removed.
+    collections[game][collectionId] = collections[game][collectionId].filter(
+        (element: string) => element !== videoId
+    );
+
+    const collection = collections[game][collectionId];
+    collection.sort();
+    collections[game][collectionId] = collection;
+
+    const {collectionMeta} = getConfigDirectories();
+
+    // Store updated file
+    fs.writeFileSync(
+        collectionMeta,
+        JSON.stringify(collections, null, 5)
+    );
+}
 
 const importZip = async (filePath: string, game: string) => {
     // Extract video names from zip
@@ -848,13 +885,15 @@ ipcMain.handle('getPreviewImage', (event, { collectionId, game }) => {
 
 ipcMain.handle(
     'renameVideo',
-    (event, { id, newTitle, game }) => {
+    (event, { id, newTitle, game, collectionId }) => {
         log.info(
-            `RENAMING ${id} to new title ${newTitle} for game ${game}`
+            `RENAMING ${id} to new title ${newTitle} in collection ${collectionId} for game ${game}`
         );
 
+        const newId = newTitle.replaceAll(' ', '_');
+
         const {clip: videoFilePath, subtitle: subFilePath, thumbnail: thumbNailPath} = getClipPaths(id, game);
-        const {clip: newVideoFilePath, subtitle: newSubFilePath, thumbnail: newThumbNailPath} = getClipPaths(newTitle.replaceAll(' ', '_'), game);
+        const {clip: newVideoFilePath, subtitle: newSubFilePath, thumbnail: newThumbNailPath} = getClipPaths(newId, game);
 
         log.info(`RENAMING ${videoFilePath} to ${newVideoFilePath}`);
         fs.renameSync(videoFilePath, newVideoFilePath);
@@ -864,6 +903,9 @@ ipcMain.handle(
 
         log.info(`RENAMING ${thumbNailPath} to ${newThumbNailPath}`);
         fs.renameSync(thumbNailPath, newThumbNailPath);
+
+        removeFromCollection(game, collectionId, id);
+        addToCollection(game, collectionId, [newId]);
     }
 );
 
@@ -988,6 +1030,10 @@ ipcMain.handle('addToCollection', (event, { collectionId, videoId, game }) => {
         collections[game][collectionId].push(videoId);
     }
 
+    const collection = collections[game][collectionId];
+    collection.sort();
+    collections[game][collectionId] = collection;
+
     const {collectionMeta} = getConfigDirectories();
 
     // Store updated file
@@ -1012,6 +1058,10 @@ ipcMain.handle(
         collections[game][collectionId] = collections[game][collectionId].filter(
             (element: string) => element !== videoId
         );
+
+        const collection = collections[game][collectionId];
+        collection.sort();
+        collections[game][collectionId] = collection;
 
         const {collectionMeta} = getConfigDirectories();
 

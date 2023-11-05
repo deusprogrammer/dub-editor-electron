@@ -28,9 +28,17 @@ export default ({
     const [, setInterstitialState] = useAtom(interstitialAtom);
 
     const renameClip = async () => {
-        console.log('RENAMED');
+        const collectionId = Object.keys(collections).find((key) =>
+            collections[key].includes(renaming)
+        );
+
         await handleInterstitial(
-            window.api.send('renameVideo', { id: renaming, game, newTitle }),
+            window.api.send('renameVideo', {
+                id: renaming,
+                game,
+                newTitle,
+                collectionId,
+            }),
             (open) => {
                 setInterstitialState(open);
             }
@@ -170,34 +178,37 @@ export default ({
                                     />
                                 </div>
                             )}
-                            {includeRename ? (
-                                <div>
-                                    {renaming !== video._id ? (
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setNewTitle(
-                                                    video._id.replace(/_/g, ' ')
-                                                );
-                                                setRenaming(video._id);
-                                            }}
-                                        >
-                                            Rename
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={() => {
-                                                renameClip();
-                                                setRenaming(null);
-                                            }}
-                                        >
-                                            Done
-                                        </button>
-                                    )}
-                                </div>
-                            ) : null}
-                            {includeDelete ? (
-                                <div>
+                            <div>
+                                {includeRename ? (
+                                    <>
+                                        {renaming !== video._id ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setNewTitle(
+                                                        video._id.replace(
+                                                            /_/g,
+                                                            ' '
+                                                        )
+                                                    );
+                                                    setRenaming(video._id);
+                                                }}
+                                            >
+                                                Rename
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => {
+                                                    renameClip();
+                                                    setRenaming(null);
+                                                }}
+                                            >
+                                                Done
+                                            </button>
+                                        )}
+                                    </>
+                                ) : null}
+                                {includeDelete ? (
                                     <button
                                         type="button"
                                         onClick={() => {
@@ -206,8 +217,8 @@ export default ({
                                     >
                                         Delete
                                     </button>
-                                </div>
-                            ) : null}
+                                ) : null}
+                            </div>
                         </div>
                     );
                 })}
