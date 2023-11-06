@@ -51,6 +51,4 @@ When you first launch the app, it will ask you to configure the game directories
 -   Deletion of subtitles.
 -   Recording of riffs for individual clips.
 
-Please feel free to request features :).
-
-> > > > > > > 75400926c44b5755af3819b73735eb6a4ab5a742
+Please feel free to request features :)
