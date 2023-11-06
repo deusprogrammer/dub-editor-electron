@@ -283,7 +283,7 @@ button.selected {
 .clip-table {
     display: grid;
     grid-template-columns: repeat(auto-fit, 10%);
-    align-items: end;
+    align-items: start;
     gap: 10px;
 }
 
@@ -296,6 +296,7 @@ button.selected {
 
 .clip-table img {
     width: 100%;
+    height: 100%;
     object-fit: contain;
 }
 

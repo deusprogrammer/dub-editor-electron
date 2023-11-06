@@ -161,25 +161,37 @@ export default ({
                                         opFn(collectionId, video._id);
                                     }}
                                 >
-                                    <div className={opClass}>
+                                    <div
+                                        className={opClass}
+                                        style={{ height: '10vh' }}
+                                    >
                                         <img
                                             src={`game://${game}/${video._id}.jpg`}
                                         />
                                     </div>
                                 </div>
                             </div>
-                            {renaming !== video._id ? (
-                                <div>{video._id.replace(/_/g, ' ')}</div>
-                            ) : (
-                                <div>
-                                    <input
-                                        value={newTitle}
-                                        onChange={({ target: { value } }) => {
-                                            setNewTitle(value);
-                                        }}
-                                    />
-                                </div>
-                            )}
+                            <div
+                                style={{
+                                    height: '50px',
+                                    overflow: 'clip',
+                                }}
+                            >
+                                {renaming !== video._id ? (
+                                    <div>{video._id.replace(/_/g, ' ')}</div>
+                                ) : (
+                                    <div>
+                                        <input
+                                            value={newTitle}
+                                            onChange={({
+                                                target: { value },
+                                            }) => {
+                                                setNewTitle(value);
+                                            }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
                             <div>
                                 {includeRename ? (
                                     <>
