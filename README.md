@@ -6,7 +6,7 @@ https://www.youtube.com/watch?v=0uadv6v8-VY&ab_channel=TheTrueKingOfSpace
 
 ## Keyboard Shortcuts
 
-
+|------------|---------------|
 | Arrow Up   | prev sub/clip |
 | Arrow Down | next sub/clip |
 | Arrow Left | rw 1s         |
@@ -23,6 +23,7 @@ https://www.youtube.com/watch?v=0uadv6v8-VY&ab_channel=TheTrueKingOfSpace
 |      t     | edit type     |
 |      v     | edit voice    |
 |    space   | play/pause    |
+|------------|---------------|
 
 ## How to Test Development
 
