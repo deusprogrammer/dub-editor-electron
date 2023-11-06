@@ -76,10 +76,38 @@ export default ({
 
     return (
         <div className="timeline">
-            <div style={{ textAlign: 'left' }}>
-                <span>
+            <div
+                style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                }}
+            >
+                <div>
                     {convertMillisecondsToTimestamp(currentSliderPosition)}
-                </span>
+                </div>
+                <div>
+                    {!isPlaying && currentPosition < videoLength ? (
+                        <button
+                            onClick={() => {
+                                if (currentSliderPosition < videoLengthMs) {
+                                    onStateChange(true);
+                                }
+                            }}
+                        >
+                            Play
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => {
+                                onStateChange(false);
+                            }}
+                        >
+                            Pause
+                        </button>
+                    )}
+                </div>
+                <div></div>
             </div>
             <input
                 type="range"

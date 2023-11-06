@@ -94,6 +94,8 @@ export default ({
         });
     }
 
+    videos.sort((a, b) => a.name.localeCompare(b.name));
+
     return (
         <div>
             <div

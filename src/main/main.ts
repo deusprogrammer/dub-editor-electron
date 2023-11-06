@@ -208,10 +208,6 @@ const addToCollection = (
         }
     });
 
-    const collection = collections[game][collectionId];
-    collection.sort();
-    collections[game][collectionId] = collection;
-
     const {collectionMeta} = getConfigDirectories();
 
     log.info("WRITING TO " + collectionMeta);
@@ -236,10 +232,6 @@ const removeFromCollection = (game: string, collectionId: string, videoId: strin
     collections[game][collectionId] = collections[game][collectionId].filter(
         (element: string) => element !== videoId
     );
-
-    const collection = collections[game][collectionId];
-    collection.sort();
-    collections[game][collectionId] = collection;
 
     const {collectionMeta} = getConfigDirectories();
 
@@ -1030,10 +1022,6 @@ ipcMain.handle('addToCollection', (event, { collectionId, videoId, game }) => {
         collections[game][collectionId].push(videoId);
     }
 
-    const collection = collections[game][collectionId];
-    collection.sort();
-    collections[game][collectionId] = collection;
-
     const {collectionMeta} = getConfigDirectories();
 
     // Store updated file
@@ -1058,10 +1046,6 @@ ipcMain.handle(
         collections[game][collectionId] = collections[game][collectionId].filter(
             (element: string) => element !== videoId
         );
-
-        const collection = collections[game][collectionId];
-        collection.sort();
-        collections[game][collectionId] = collection;
 
         const {collectionMeta} = getConfigDirectories();
 

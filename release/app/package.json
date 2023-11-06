@@ -1,6 +1,6 @@
 {
     "name": "dub-editor-sa-electron",
-    "version": "2.3.0-beta",
+    "version": "2.4.0-beta",
     "description": "A dub editor for What the Dub and Rifftrax games by Wide Right Studios",
     "license": "MIT",
     "author": {
