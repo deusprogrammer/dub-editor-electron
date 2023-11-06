@@ -6,6 +6,7 @@ https://www.youtube.com/watch?v=0uadv6v8-VY&ab_channel=TheTrueKingOfSpace
 
 ## Keyboard Shortcuts
 
+|            |               |
 |------------|---------------|
 | Arrow Up   | prev sub/clip |
 | Arrow Down | next sub/clip |
