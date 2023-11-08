@@ -182,6 +182,7 @@ export default ({
                 </table>
             </div>
             <button
+                title="n"
                 onClick={() => {
                     onSubsChange('add', {
                         rowIndex: currentRow,

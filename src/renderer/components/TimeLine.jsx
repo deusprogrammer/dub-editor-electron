@@ -87,8 +87,35 @@ export default ({
                     {convertMillisecondsToTimestamp(currentSliderPosition)}
                 </div>
                 <div>
+                    <button
+                        title="Left Arrow (back 1 second)"
+                        onClick={() => {
+                            onSliderPositionChange(
+                                Math.max(
+                                    0,
+                                    currentSliderPosition + offset - 1000
+                                )
+                            );
+                        }}
+                    >
+                        &lt;&lt;
+                    </button>
+                    <button
+                        title="; (back 1 frame)"
+                        onClick={() => {
+                            onSliderPositionChange(
+                                Math.max(
+                                    0,
+                                    currentSliderPosition + offset - 1000 / 60
+                                )
+                            );
+                        }}
+                    >
+                        &lt;
+                    </button>
                     {!isPlaying && currentPosition < videoLength ? (
                         <button
+                            title="Space"
                             onClick={() => {
                                 if (currentSliderPosition < videoLengthMs) {
                                     onStateChange(true);
@@ -99,6 +126,7 @@ export default ({
                         </button>
                     ) : (
                         <button
+                            title="Space"
                             onClick={() => {
                                 onStateChange(false);
                             }}
@@ -106,6 +134,30 @@ export default ({
                             Pause
                         </button>
                     )}
+                    <button
+                        title="' (forward 1 frame)"
+                        onClick={() => {
+                            if (currentSliderPosition < videoLengthMs) {
+                                onSliderPositionChange(
+                                    currentSliderPosition + offset + 1000 / 60
+                                );
+                            }
+                        }}
+                    >
+                        &gt;
+                    </button>
+                    <button
+                        title="Right Arrow (forward 1 sec)"
+                        onClick={() => {
+                            if (currentSliderPosition < videoLengthMs) {
+                                onSliderPositionChange(
+                                    currentSliderPosition + offset + 1000
+                                );
+                            }
+                        }}
+                    >
+                        &gt;&gt;
+                    </button>
                 </div>
                 <div></div>
             </div>

@@ -116,6 +116,7 @@ export default ({
                 </table>
             </div>
             <button
+                title="n"
                 onClick={() => {
                     onClipsChange('add', {
                         rowIndex: 0,
@@ -125,7 +126,7 @@ export default ({
                     });
                 }}
             >
-                Add Subtitle
+                Add Clip
             </button>
             {currentClipObject ? (
                 <>
