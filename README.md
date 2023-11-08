@@ -4,6 +4,27 @@ Dub Editor is a tool for creating/managing clips for Rifftrax the Game and What 
 
 https://www.youtube.com/watch?v=0uadv6v8-VY&ab_channel=TheTrueKingOfSpace
 
+## Keyboard Shortcuts
+
+| Key        | Function      |
+|------------|---------------|
+| Arrow Up   | prev sub/clip |
+| Arrow Down | next sub/clip |
+| Arrow Left | rw 1s         |
+| Arrow Right| ffw 1s        |
+|      ;     | rw 1 frame    |
+|      '     | ffw 1 frame   |
+|      \[    | go to in      |
+|      \]    | go to out     |
+|      i     | set in        |
+|      o     | set out       |
+|      w     | go up row     |
+|      s     | go down row   |
+|      e     | edit sub      |
+|      t     | edit type     |
+|      v     | edit voice    |
+|    space   | play/pause    |
+
 ## How to Test Development
 
 Make sure to run the following to install all of the dependencies.
@@ -30,6 +51,4 @@ When you first launch the app, it will ask you to configure the game directories
 -   Deletion of subtitles.
 -   Recording of riffs for individual clips.
 
-Please feel free to request features :).
-
-> > > > > > > 75400926c44b5755af3819b73735eb6a4ab5a742
+Please feel free to request features :)
