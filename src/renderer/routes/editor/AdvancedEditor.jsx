@@ -220,9 +220,9 @@ let AdvancedEditor = () => {
                         parseInt(stateRef.current.currentSliderPosition) -
                         stateRef.current.offset,
                     endTime:
-                        parseInt(stateRef.current.currentSliderPosition) -
+                        Math.min(parseInt(stateRef.current.currentSliderPosition) -
                         stateRef.current.offset +
-                        stateRef.current.defaultClipSize,
+                        stateRef.current.defaultClipSize, stateRef.current.videoLength * 1000),
                     text: '',
                     type: 'subtitle',
                     voice: 'male',

@@ -3,6 +3,10 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 let convertMillisecondsToTimestamp = (milliseconds) => {
+    if (milliseconds === undefined || milliseconds === null) {
+        return '';
+    }
+
     let seconds = milliseconds / 1000;
     let h = Math.floor(seconds / 3600);
     let m = Math.floor((seconds % 3600) / 60);
@@ -29,7 +33,7 @@ export default ({
     let currentClipObject = clips[currentClip];
 
     let videoLengthMs = videoLength * 1000;
-    let defaultClipSize = videoLengthMs * 0.1;
+    let defaultClipSize = videoLengthMs * 0.1; // The recommended maximum length
 
     return (
         <div className="subtitle-window">
@@ -65,7 +69,7 @@ export default ({
             <h3>Clips</h3>
             <div className="subtitle-list">
                 <table>
-                    <thead>
+                <thead style={{position: "sticky", top: "0px", backgroundColor: "black"}}>
                         <tr>
                             <th>Index</th>
                             <th>In</th>
@@ -122,77 +126,75 @@ export default ({
                         rowIndex: 0,
                         startTime: parseInt(currentSliderPosition),
                         endTime:
-                            parseInt(currentSliderPosition) + defaultClipSize,
+                            Math.min(parseInt(currentSliderPosition) + defaultClipSize, videoLengthMs),
                     });
                 }}
             >
                 Add Clip
             </button>
-            {currentClipObject ? (
-                <>
-                    <h3>Clip Editor</h3>
-                    <div className="subtitle-editor">
-                        <table style={{ margin: 'auto' }}>
-                            <tr>
-                                <td>
-                                    <label>Start</label>
-                                </td>
-                                <td>
-                                    {convertMillisecondsToTimestamp(
-                                        currentClipObject.startTime
-                                    )}
-                                </td>
-                                <td>
-                                    <button
-                                        title="i"
-                                        onClick={() => {
-                                            onClipsChange(
-                                                'edit',
-                                                {
-                                                    ...currentClipObject,
-                                                    startTime:
-                                                        currentSliderPosition,
-                                                },
-                                                currentClip
-                                            );
-                                        }}
-                                    >
-                                        Set at Play Head
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <label>End</label>
-                                </td>
-                                <td>
-                                    {convertMillisecondsToTimestamp(
-                                        currentClipObject.endTime
-                                    )}
-                                </td>
-                                <td>
-                                    <button
-                                        title="o"
-                                        onClick={() => {
-                                            onClipsChange(
-                                                'edit',
-                                                {
-                                                    ...currentClipObject,
-                                                    endTime:
-                                                        currentSliderPosition,
-                                                },
-                                                currentClip
-                                            );
-                                        }}
-                                    >
-                                        Set at Play Head
-                                    </button>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                </>
-            ) : null}
+                <h3>Clip Editor</h3>
+                <div className="subtitle-editor">
+                    <table style={{ margin: 'auto' }}>
+                        <tr>
+                            <td>
+                                <label>Start</label>
+                            </td>
+                            <td>
+                                {convertMillisecondsToTimestamp(
+                                    currentClipObject?.startTime
+                                )}
+                            </td>
+                            <td>
+                                <button
+                                    title="i"
+                                    onClick={() => {
+                                        onClipsChange(
+                                            'edit',
+                                            {
+                                                ...currentClipObject,
+                                                startTime:
+                                                    currentSliderPosition,
+                                            },
+                                            currentClip
+                                        );
+                                    }}
+                                    disabled={!currentClipObject}
+                                >
+                                    Set at Play Head
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <label>End</label>
+                            </td>
+                            <td>
+                                {convertMillisecondsToTimestamp(
+                                    currentClipObject?.endTime
+                                )}
+                            </td>
+                            <td>
+                                <button
+                                    title="o"
+                                    onClick={() => {
+                                        onClipsChange(
+                                            'edit',
+                                            {
+                                                ...currentClipObject,
+                                                endTime:
+                                                    currentSliderPosition,
+                                            },
+                                            currentClip
+                                        );
+                                    }}
+                                    disabled={!currentClipObject}
+                                >
+                                    Set at Play Head
+                                </button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
         </div>
     );
 };

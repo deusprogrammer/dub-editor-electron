@@ -3,6 +3,10 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 let convertMillisecondsToTimestamp = (milliseconds) => {
+    if (milliseconds === undefined || milliseconds === null) {
+        return '';
+    }
+
     let seconds = milliseconds / 1000;
     let h = Math.floor(seconds / 3600);
     let m = Math.floor((seconds % 3600) / 60);
@@ -129,7 +133,7 @@ export default ({
             <h3>Subtitles</h3>
             <div className="subtitle-list">
                 <table>
-                    <thead>
+                    <thead style={{position: "sticky", top: "0px", backgroundColor: "black"}}>
                         <tr>
                             <th>Index</th>
                             <th>In</th>
@@ -188,7 +192,7 @@ export default ({
                         rowIndex: currentRow,
                         startTime: parseInt(currentSliderPosition),
                         endTime:
-                            parseInt(currentSliderPosition) + defaultClipSize,
+                            Math.min(parseInt(currentSliderPosition) + defaultClipSize, videoLengthMs),
                         text: '',
                         type: 'subtitle',
                         voice: 'male',
@@ -197,159 +201,160 @@ export default ({
             >
                 Add Subtitle
             </button>
-            {currentSubObject ? (
-                <>
-                    <h3>Subtitle Editor</h3>
-                    <div className="subtitle-editor">
-                        <table style={{ margin: 'auto' }}>
-                            <tr>
-                                <td>
-                                    <label>Start</label>
-                                </td>
-                                <td>
-                                    {convertMillisecondsToTimestamp(
-                                        currentSubObject.startTime
-                                    )}
-                                </td>
-                                <td>
-                                    <button
-                                        title="i"
-                                        onClick={() => {
-                                            onSubsChange(
-                                                'edit',
-                                                {
-                                                    ...currentSubObject,
-                                                    startTime:
-                                                        currentSliderPosition,
-                                                },
-                                                currentSub
-                                            );
-                                        }}
-                                    >
-                                        Set at Play Head
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <label>End</label>
-                                </td>
-                                <td>
-                                    {convertMillisecondsToTimestamp(
-                                        currentSubObject.endTime
-                                    )}
-                                </td>
-                                <td>
-                                    <button
-                                        title="o"
-                                        onClick={() => {
-                                            onSubsChange(
-                                                'edit',
-                                                {
-                                                    ...currentSubObject,
-                                                    endTime:
-                                                        currentSliderPosition,
-                                                },
-                                                currentSub
-                                            );
-                                        }}
-                                    >
-                                        Set at Play Head
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <label>Subtitle Type</label>
-                                </td>
-                                <td>
-                                    <select
-                                        id="subtitle-type"
-                                        value={currentSubObject.type}
-                                        onChange={({
-                                            target: { value: type },
-                                        }) => {
-                                            onSubsChange(
-                                                'edit',
-                                                {
-                                                    ...currentSubObject,
-                                                    type,
-                                                },
-                                                currentSub
-                                            );
-                                        }}
-                                    >
-                                        <option value="subtitle">
-                                            Subtitle
-                                        </option>
-                                        <option value="dynamic">
-                                            {game === 'rifftrax'
-                                                ? 'Riff'
-                                                : 'Dub'}
-                                        </option>
-                                    </select>
-                                </td>
-                            </tr>
-                            {game === 'whatthedub' &&
-                            currentSubObject.type === 'dynamic' ? (
-                                <tr>
-                                    <td>
-                                        <label>Voice</label>
-                                    </td>
-                                    <td>
-                                        <select
-                                            id="subtitle-voice"
-                                            value={currentSubObject.voice}
-                                            onChange={({
-                                                target: { value: voice },
-                                            }) => {
-                                                onSubsChange(
-                                                    'edit',
-                                                    {
-                                                        ...currentSubObject,
-                                                        voice,
-                                                    },
-                                                    currentSub
-                                                );
-                                            }}
-                                        >
-                                            <option value="male">Male</option>
-                                            <option value="female">
-                                                Female
-                                            </option>
-                                        </select>
-                                    </td>
-                                </tr>
-                            ) : null}
-                            {currentSubObject.type !== 'dynamic' ? (
-                                <tr>
-                                    <td>
-                                        <label>Subtitle</label>
-                                    </td>
-                                    <td>
-                                        <textarea
-                                            id="subtitle-text"
-                                            value={currentSubObject.text}
-                                            onChange={({
-                                                target: { value: text },
-                                            }) => {
-                                                onSubsChange(
-                                                    'edit',
-                                                    {
-                                                        ...currentSubObject,
-                                                        text,
-                                                    },
-                                                    currentSub
-                                                );
-                                            }}
-                                        />
-                                    </td>
-                                </tr>
-                            ) : null}
-                        </table>
-                    </div>
-                </>
-            ) : null}
+            <h3>Subtitle Editor</h3>
+            <div className="subtitle-editor">
+                <table style={{ margin: 'auto' }}>
+                    <tr>
+                        <td>
+                            <label>Start</label>
+                        </td>
+                        <td>
+                            {convertMillisecondsToTimestamp(
+                                currentSubObject?.startTime
+                            )}
+                        </td>
+                        <td>
+                            <button
+                                title="i"
+                                onClick={() => {
+                                    onSubsChange(
+                                        'edit',
+                                        {
+                                            ...currentSubObject,
+                                            startTime:
+                                                currentSliderPosition,
+                                        },
+                                        currentSub
+                                    );
+                                }}
+                                disabled={!currentSubObject}
+                            >
+                                Set at Play Head
+                            </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>End</label>
+                        </td>
+                        <td>
+                            {convertMillisecondsToTimestamp(
+                                currentSubObject?.endTime
+                            )}
+                        </td>
+                        <td>
+                            <button
+                                title="o"
+                                onClick={() => {
+                                    onSubsChange(
+                                        'edit',
+                                        {
+                                            ...currentSubObject,
+                                            endTime:
+                                                currentSliderPosition,
+                                        },
+                                        currentSub
+                                    );
+                                }}
+                                disabled={!currentSubObject}
+                            >
+                                Set at Play Head
+                            </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>Subtitle Type</label>
+                        </td>
+                        <td>
+                            <select
+                                id="subtitle-type"
+                                value={currentSubObject?.type}
+                                onChange={({
+                                    target: { value: type },
+                                }) => {
+                                    onSubsChange(
+                                        'edit',
+                                        {
+                                            ...currentSubObject,
+                                            type,
+                                        },
+                                        currentSub
+                                    );
+                                }}
+                                disabled={!currentSubObject}
+                            >
+                                <option value="subtitle">
+                                    Subtitle
+                                </option>
+                                <option value="dynamic">
+                                    {game === 'rifftrax'
+                                        ? 'Riff'
+                                        : 'Dub'}
+                                </option>
+                            </select>
+                        </td>
+                    </tr>
+                    {game === 'whatthedub' &&
+                    currentSubObject?.type === 'dynamic' ? (
+                        <tr>
+                            <td>
+                                <label>Voice</label>
+                            </td>
+                            <td>
+                                <select
+                                    id="subtitle-voice"
+                                    value={currentSubObject?.voice}
+                                    onChange={({
+                                        target: { value: voice },
+                                    }) => {
+                                        onSubsChange(
+                                            'edit',
+                                            {
+                                                ...currentSubObject,
+                                                voice,
+                                            },
+                                            currentSub
+                                        );
+                                    }}
+                                    disabled={!currentSubObject}
+                                >
+                                    <option value="male">Male</option>
+                                    <option value="female">
+                                        Female
+                                    </option>
+                                </select>
+                            </td>
+                        </tr>
+                    ) : null}
+                    {currentSubObject?.type !== 'dynamic' ? (
+                        <tr>
+                            <td>
+                                <label>Subtitle</label>
+                            </td>
+                            <td>
+                                <textarea
+                                    id="subtitle-text"
+                                    value={currentSubObject?.text}
+                                    onChange={({
+                                        target: { value: text },
+                                    }) => {
+                                        onSubsChange(
+                                            'edit',
+                                            {
+                                                ...currentSubObject,
+                                                text,
+                                            },
+                                            currentSub
+                                        );
+                                    }}
+                                    disabled={!currentSubObject}
+                                />
+                            </td>
+                        </tr>
+                    ) : null}
+                </table>
+            </div>
         </div>
     );
 };

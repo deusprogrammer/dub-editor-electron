@@ -75,7 +75,7 @@ export default ({
     });
 
     return (
-        <div className="timeline">
+        <div className="timeline" style={{width: timelineWidth}}>
             <div
                 style={{
                     display: 'flex',
@@ -180,7 +180,6 @@ export default ({
             <div
                 style={{
                     width: `${timelineWidth}px`,
-                    height: '100%',
                     position: 'relative',
                 }}
             >
