@@ -92,7 +92,7 @@ export default ({
                         onClick={() => {
                             onSliderPositionChange(
                                 Math.max(
-                                    0,
+                                    0 + offset,
                                     currentSliderPosition + offset - 1000
                                 )
                             );
@@ -105,7 +105,7 @@ export default ({
                         onClick={() => {
                             onSliderPositionChange(
                                 Math.max(
-                                    0,
+                                    0 + offset,
                                     currentSliderPosition + offset - 1000 / 60
                                 )
                             );

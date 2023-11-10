@@ -144,6 +144,7 @@ export default ({
                                 </td>
                                 <td>
                                     <button
+                                        title="i"
                                         onClick={() => {
                                             onClipsChange(
                                                 'edit',
@@ -171,6 +172,7 @@ export default ({
                                 </td>
                                 <td>
                                     <button
+                                        title="o"
                                         onClick={() => {
                                             onClipsChange(
                                                 'edit',

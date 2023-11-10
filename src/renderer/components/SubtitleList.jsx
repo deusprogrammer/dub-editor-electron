@@ -213,6 +213,7 @@ export default ({
                                 </td>
                                 <td>
                                     <button
+                                        title="i"
                                         onClick={() => {
                                             onSubsChange(
                                                 'edit',
@@ -240,6 +241,7 @@ export default ({
                                 </td>
                                 <td>
                                     <button
+                                        title="o"
                                         onClick={() => {
                                             onSubsChange(
                                                 'edit',

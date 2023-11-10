@@ -91,6 +91,8 @@ let AdvancedEditor = () => {
         isPlaying,
         defaultClipSize,
         videoLength,
+        offset,
+        actualVideoLength,
     };
     const keyboardHandler = useCallback((event) => {
         if (isActiveElementInput()) {
@@ -120,58 +122,42 @@ let AdvancedEditor = () => {
                 break;
             }
             case 'ArrowLeft': {
-                setCurrentSliderPosition((currentSliderPosition) =>
-                    Math.max(0, currentSliderPosition - 1000)
-                );
-                setCurrentPosition(
+                scrub(
                     Math.max(
-                        0,
-                        stateRef.current.currentSliderPosition / 1000 - 1
+                        0 + stateRef.current.offset,
+                        stateRef.current.currentSliderPosition - 1000
                     )
                 );
 
                 break;
             }
             case 'ArrowRight': {
-                setCurrentSliderPosition((currentSliderPosition) =>
+                scrub(
                     Math.min(
-                        stateRef.current.videoLength * 1000,
-                        currentSliderPosition + 1000
-                    )
-                );
-                setCurrentPosition(
-                    Math.min(
-                        stateRef.current.videoLength,
-                        stateRef.current.currentSliderPosition / 1000 + 1
+                        stateRef.current.currentSliderPosition + 1000,
+                        stateRef.current.videoLength * 1000 +
+                            stateRef.current.offset
                     )
                 );
 
                 break;
             }
             case ';': {
-                setCurrentSliderPosition((currentSliderPosition) =>
-                    Math.max(0, currentSliderPosition - 1000 / 60)
-                );
-                setCurrentPosition(
+                scrub(
                     Math.max(
-                        0,
-                        stateRef.current.currentSliderPosition / 1000 - 1 / 60
+                        0 + stateRef.current.offset,
+                        stateRef.current.currentSliderPosition - 1000 / 60
                     )
                 );
 
                 break;
             }
             case "'": {
-                setCurrentSliderPosition((currentSliderPosition) =>
+                scrub(
                     Math.min(
-                        stateRef.current.videoLength * 1000,
-                        currentSliderPosition + 1000 / 60
-                    )
-                );
-                setCurrentPosition(
-                    Math.min(
-                        stateRef.current.videoLength,
-                        stateRef.current.currentSliderPosition / 1000 + 1 / 60
+                        stateRef.current.currentSliderPosition + 1000 / 60,
+                        stateRef.current.videoLength * 1000 +
+                            stateRef.current.offset
                     )
                 );
 
@@ -184,7 +170,9 @@ let AdvancedEditor = () => {
                     'edit',
                     {
                         ...currentSubObject,
-                        startTime: stateRef.current.currentSliderPosition,
+                        startTime:
+                            stateRef.current.currentSliderPosition -
+                            stateRef.current.offset,
                     },
                     stateRef.current.currentSub
                 );
@@ -197,7 +185,9 @@ let AdvancedEditor = () => {
                     'edit',
                     {
                         ...currentSubObject,
-                        endTime: stateRef.current.currentSliderPosition,
+                        endTime:
+                            stateRef.current.currentSliderPosition -
+                            stateRef.current.offset,
                     },
                     stateRef.current.currentSub
                 );
@@ -206,15 +196,13 @@ let AdvancedEditor = () => {
             case '[': {
                 let currentSubObject =
                     stateRef.current.subs[stateRef.current.currentSub];
-                setCurrentSliderPosition(currentSubObject.startTime);
-                setCurrentPosition(currentSubObject.startTime / 1000);
+                scrub(currentSubObject.startTime + stateRef.current.offset);
                 break;
             }
             case ']': {
                 let currentSubObject =
                     stateRef.current.subs[stateRef.current.currentSub];
-                setCurrentSliderPosition(currentSubObject.endTime);
-                setCurrentPosition(currentSubObject.endTime / 1000);
+                scrub(currentSubObject.endTime + stateRef.current.offset);
                 break;
             }
             case 'w': {
@@ -228,9 +216,12 @@ let AdvancedEditor = () => {
             case 'n':
                 subChangeHandler('add', {
                     rowIndex: stateRef.current.currentRow,
-                    startTime: parseInt(stateRef.current.currentSliderPosition),
+                    startTime:
+                        parseInt(stateRef.current.currentSliderPosition) -
+                        stateRef.current.offset,
                     endTime:
-                        parseInt(stateRef.current.currentSliderPosition) +
+                        parseInt(stateRef.current.currentSliderPosition) -
+                        stateRef.current.offset +
                         stateRef.current.defaultClipSize,
                     text: '',
                     type: 'subtitle',
@@ -251,13 +242,14 @@ let AdvancedEditor = () => {
                 break;
         }
         event.stopPropagation();
+        event.preventDefault();
     });
 
     const getCurrentIndex = () => {
         let index = subs.findIndex((subtitle) => {
             return (
-                currentSliderPosition > subtitle.startTime &&
-                currentSliderPosition < subtitle.endTime
+                currentSliderPosition > subtitle.startTime + offset &&
+                currentSliderPosition < subtitle.endTime + offset
             );
         });
 
@@ -404,9 +396,11 @@ let AdvancedEditor = () => {
     let scrub = (milliseconds) => {
         if (milliseconds < 0) {
             milliseconds = 0;
-        } else if (milliseconds > actualVideoLength * 1000) {
-            milliseconds = videoLength * 1000;
+        } else if (milliseconds > stateRef.current.actualVideoLength * 1000) {
+            milliseconds = stateRef.current.videoLength * 1000;
         }
+
+        console.log('SCRUB TO ' + milliseconds);
 
         setCurrentPosition(milliseconds / 1000);
         setCurrentSliderPosition(milliseconds);
