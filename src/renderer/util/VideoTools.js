@@ -157,6 +157,7 @@ export let addVideo = async (
         return await window.api.send('processBatchClip', {
             videoSource,
             subtitles: convertSubtitlesToSrt(subtitles, type),
+            subtitleObjects: subtitles,
             title,
             clipNumber,
             game: type,
@@ -165,6 +166,7 @@ export let addVideo = async (
     return await window.api.send('storeVideo', {
         videoSource,
         subtitles: convertSubtitlesToSrt(subtitles, type),
+        subtitleObjects: subtitles,
         title,
         clipNumber,
         game: type,

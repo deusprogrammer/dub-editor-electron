@@ -762,11 +762,12 @@ ipcMain.handle('nextBatchClip', (event) => {
     };
 });
 
-ipcMain.handle('processBatchClip', async (event, {videoSource, subtitles, title, clipNumber, game}) => {
+ipcMain.handle('processBatchClip', async (event, {videoSource, subtitles, subtitleObjects, title, clipNumber, game}) => {
     log.info(
         `STORING ${title}-${clipNumber} for game ${game} with subtitles ${subtitles}`
     );
-    
+
+    log.info(`SUBTITLE OBJECTS: \n${JSON.stringify(subtitleObjects, null, 5)}`);
 
     let {batchCacheMeta} = getConfigDirectories();
 
@@ -903,10 +904,12 @@ ipcMain.handle(
 
 ipcMain.handle(
     'storeVideo',
-    (event, { videoSource, subtitles, title, clipNumber, game }) => {
+    (event, { videoSource, subtitles, subtitleObjects, title, clipNumber, game }) => {
         log.info(
             `STORING ${title}-${clipNumber} for game ${game} with subtitles \n${subtitles}`
         );
+
+        log.info(`SUBTITLE OBJECTS: \n${JSON.stringify(subtitleObjects, null, 5)}`);
 
         let id = createClipName(title, clipNumber);
         const {clip: videoFilePath, subtitle: subFilePath, thumbnail: thumbNailPath} = getClipPaths(id, game);
