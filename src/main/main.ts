@@ -541,7 +541,9 @@ if (!fs.existsSync(CONFIG_FILE)) {
     fs.writeFileSync(CONFIG_FILE, Buffer.from(JSON.stringify(config, null, 5)));
 } else {
     config = JSON.parse(fs.readFileSync(CONFIG_FILE, {}).toString());
-    updateLogLocation();
+    if (config.mediaDirectory) {
+        updateLogLocation();
+    }
 }
 
 createMetaDataFiles();
