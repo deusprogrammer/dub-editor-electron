@@ -119,7 +119,11 @@ let SimpleEditor = () => {
             setButtonsDisabled(true);
             let videoId = await addVideo(
                 videoSource.substring(videoSource.indexOf(',') + 1),
-                subs,
+                subs.map((sub) => ({
+                    ...sub,
+                    startTime: sub.startTime * 1000,
+                    endTime: sub.endTime * 1000,
+                })),
                 videoName,
                 clipNumber,
                 params.type
